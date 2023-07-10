@@ -1,2 +1,2 @@
-# soundofMI-3
+# MatchedFilter
 A soundofMI version, fully compatible with windows.
