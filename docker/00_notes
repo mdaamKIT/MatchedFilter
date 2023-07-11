@@ -1,0 +1,51 @@
+
+In this directory lies the Dockerfile out of which the image mdaamkit/mpi is build.
+
+
+How to update the docker image
+------------------------------
+
+- Make your changes.
+- $ systemctl start docker && docker login              # normally not needed.
+- $ docker build -t _tag_ _location_ --network = host   # builds image tagged _tag_ from Dockerfile in _location_
+- $ docker image tag _tag_:latest mdaamkit/_tag_"       # maybe I could immediately tag it mdaamkit/mpi in the line before
+- $ docker image push mdaamkit/_tag_                    # pushing image to the dockerhub
+- $ docker image ls                                     # checking if you updated the image
+
+only necessary on a different machine
+- $ docker pull mdaamkit/_tag_                          # pulling image from dockerhub
+not necessary at all
+- $ docker run -v _host_:_container_ mdaamkit/_tag_     # runs the container while connecting the volumes _host_ on the host with _container_ inside the container.
+
+
+Test: d01_setup-ctm
+-------------------
+
+Results in the directory (only local on my machine): MatchedFilter/tests/docker/d01_setup-ctm
+With these tests, I achieved:
+ - to start a docker-container from a python-script.
+ - to create a file inside the container from an outside script, persistent after shutdown of the container and readable from the host.
+ - to run a script inside the container from a script from outside that creates such a file.
+ -> This is what I need for my Matched Filter.
+ - I also found a way to debug a little inside the container, without going through the docker logs.
+
+These commands have been executed inside a script in MatchedFilter to perform those tests:
+>>> import docker
+>>> 
+>>> # setup a client and run a container
+>>> client = docker.from_env()
+>>> volumes = {'/home/mic/promotion/f-prakt_material/LIGO/pycbc/MatchedFilter/tests/docker/d01_setup-ctm/': {'bind': '/output', 'mode': 'rw'}}
+>>> container = client.containers.run("mdaamkit/mpi", detach=True, tty=True, volumes=volumes) # tty=True ist notwendig, damit der Container am Laufen bleibt, auch wenn er keinen Job hat.
+>>> 
+>>> # these worked:
+>>> container.exec_run("touch /output/testfile3.txt")
+>>> container.exec_run('''python -c 'import numpy as np; np.savetxt("/output/NowAbleToRunNumpyInContainer.txt", np.arange(10))' ''')
+>>> container.exec_run('''python -c 'import os; print(os.getcwd(), file=open("/output/WorkingDirectory.txt", "w"))' ''')
+>>> container.exec_run('''python -c 'import os; print(os.listdir(), file=open("/output/ListOfDirectory.txt", "w"))' ''')
+>>> container.exec_run('''python -c 'import os; print(os.listdir("/"), file=open("/output/ListOfOutput.txt", "w"))' ''') # with this, I can look in any directory inside the container
+>>> container.exec_run('''python -c 'import mics_pycbc_interface as mpi; mpi.makefile("/output/NowAbleToRunMpiInContainer.txt")' ''')   # https://stackoverflow.com/questions/18616252/python-nest-more-than-two-types-of-quotes
+>>> 
+>>> # this did not work:
+>>> container.exec_run('''python test_writing_files.py''') # this did not work (I don't know why), but as the next line did, I guess I don't need that anyway. (It did not even work to run this script locally.)
+>>> 
+>>> container.stop()
