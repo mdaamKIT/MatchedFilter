@@ -9,16 +9,44 @@ import os
 import wave
 import numpy as np
 
-
-def makefile(filename):
-	np.savetxt(filename, np.arange(10))  # just for testing
-
-
 ### About
 #   -----
 
 # This file seeks to define some useful functions to use the pycbc-functions in my lab.
 
+### Redefine classes
+#   ----------------
+
+# It is just more handy to input an object as an argument of a function than every of its properties seperately.
+# This is why I decided to transfer the Template and Data objects from the templatebank_handler on the host machine in here.
+# I guess I don't need any methods for changing values as these objects probably won't live long enough
+# since the container will have to be restarted quite a few times.
+
+class Template:
+	def __init__(self, path, filename):
+		self.path = path
+		self.filename = filename
+		self.shortname = filename[:-4]
+
+		self.frequency_series = types.frequencyseries.load_frequencyseries(self.path+self.filename)
+
+class Data:
+	def __init__(self, datapath, filename, savepath, preferred_samplerate, segment_duration, flag_show):
+		self.datapath = datapath
+		self.filename = filename
+		self.shortname = filename[:-4]
+		self.savepath = savepath
+
+		self.preferred_samplerate = preferred_samplerate
+		self.segment_duration = segment_duration
+		self.flag_show = flag_show
+
+		self.segments = segment_data(datapath+filename, preferred_samplerate, segment_duration)
+
+
+
+### Data handling functions
+#   -----------------------
 
 def mkdir( dirname, relative=True ):
 	'Creates the directory dirname.'
@@ -80,14 +108,11 @@ def load_wav( filename, channel='unclear', debugmode=False ):
 
 		if debugmode:
 			print()
-			print('Loaded file '+filename+' with channel-info '+channel)
+			print('Loaded '+filename+' with channel-info '+channel)
 			print('The loaded sample length is: ', len(track)/samplerate, 'sec.')
 			print('Its samplerate is: ',samplerate , 'Hz')
 
 	return samplerate,track
-
-
-
 
 
 ### Functions to handle lal.gpstime to datetime conversions
@@ -126,8 +151,8 @@ def get_end_time(timeseries):
 ### Functions to load data and do the matched filtering
 #   ---------------------------------------------------
 
-def load_data(filename, preferred_samplerate=4096, segment_duration=1):
-	'load some time-domain data and return it for further analyse'
+def segment_data(filename, preferred_samplerate=4096, segment_duration=1):
+	'Load a wav-file and return it as a list of TimeSeries of proper duration and samplerate for further analysis.'
 
 	# load and resample with preferred_samplerate
 	samplerate,track = load_wav(filename, channel='unclear')
@@ -183,17 +208,19 @@ def make_reference( m1, m2, samplerate=4096, duration=1.0, flag_show=False):
 	return hp
 
 
-def do_matched_filter( template, data_segments, templatename, dataname, savepath, flag_show=False):  # psd, f_low, these arguments were cut out now
+def do_matched_filter(data, template):  # psd, f_low, these arguments were cut out now  # the 'do' in the name is important not to be mixed with the matched_filter() loaded form pycbc
 	'Perform the matched filtering.'
+
+	tmp = template.frequency_series  # readability
 
 	debugmode = False
 
 	# calc offset of template end_time vs merger-time
-	offset = get_end_time(template.to_timeseries()).total_seconds()
+	offset = get_end_time(tmp.to_timeseries()).total_seconds()
 
-	num = len(data_segments)
-	lenseg = len(data_segments[0])
-	deltat = data_segments[0].delta_t
+	num = len(data.segments)
+	lenseg = len(data.segments[0])
+	deltat = data.segments[0].delta_t
 	matches = np.zeros(num)
 	indices = np.zeros(num)
 	times = np.zeros(num)
@@ -208,8 +235,8 @@ def do_matched_filter( template, data_segments, templatename, dataname, savepath
 	detail_match = 0.
 	count_of_max = 0
 
-	for count,segment in enumerate(data_segments):
-		snr = matched_filter(template, segment)#, psd=psd, low_frequency_cutoff=f_low)  # Signal-to-Noise Ratio. I am not yet sure, how to interpret that!
+	for count,segment in enumerate(data.segments):
+		snr = matched_filter(tmp, segment)#, psd=psd, low_frequency_cutoff=f_low)  # Signal-to-Noise Ratio. I am not yet sure, how to interpret that!
 		start = int(0.5*count*lenseg)
 		end = start+lenseg
 		if count % 2 == 0:
@@ -218,7 +245,7 @@ def do_matched_filter( template, data_segments, templatename, dataname, savepath
 
 		### ------- isn't it a waste of computation, to calc both seperately: matched_filter (above) and match (below) ----- ###
 
-		match1,index1,phi1 = match(template, segment, return_phase=True)                # match1 seems to be the value that is to be looked for.
+		match1,index1,phi1 = match(tmp, segment, return_phase=True)                # match1 seems to be the value that is to be looked for.
 		matches[count] = match1
 		indices[count] = index1
 		end_time = get_end_time(segment)
@@ -234,9 +261,9 @@ def do_matched_filter( template, data_segments, templatename, dataname, savepath
 			plt.plot(snr.sample_times, abs(snr))
 			plt.ylabel('signal-to-noise ratio')
 			plt.xlabel('time (s)')
-			plt.title('snr of '+dataname+' with '+templatename+' - '+str(count).zfill(2))
-			plt.savefig(savepath+'SNR_'+dataname+'_'+templatename+'_'+str(count).zfill(2)+'.png')
-			if flag_show: plt.show()
+			plt.title('snr of '+data.shortname+' with '+template.shortname+' - '+str(count).zfill(2))
+			plt.savefig(data.savepath+'SNR_'+data.shortname+'_'+template.shortname+'_'+str(count).zfill(2)+'.png')
+			if data.flag_show: plt.show()
 			else: plt.close()  
 			
 	# create and plot full snr
@@ -244,18 +271,18 @@ def do_matched_filter( template, data_segments, templatename, dataname, savepath
 	plt.plot(full_time, abs(full_snr))
 	plt.ylabel('signal-to-noise ratio')
 	plt.xlabel('time (s)')
-	plt.title('snr of '+dataname+' with '+templatename+' - full')
-	plt.savefig(savepath+'SNR_'+dataname+'_'+templatename+'_full.png')
-	if flag_show: plt.show()
+	plt.title('snr of '+data.shortname+' with '+template.shortname+' - full')
+	plt.savefig(data.savepath+'SNR_'+data.shortname+'_'+template.shortname+'_full.png')
+	if data.flag_show: plt.show()
 	else: plt.close()
 
 	# plot detail snr
 	plt.plot(detail_time, abs(detail_snr))
 	plt.ylabel('signal-to-noise ratio')
 	plt.xlabel('time (s)')
-	plt.title('snr of '+dataname+' with '+templatename+' - '+str(count_of_max).zfill(2))
-	plt.savefig(savepath+'SNR_'+dataname+'_'+templatename+'_detail.png')
-	if flag_show: plt.show()
+	plt.title('snr of '+data.shortname+' with '+template.shortname+' - '+str(count_of_max).zfill(2))
+	plt.savefig(data.savepath+'SNR_'+data.shortname+'_'+template.shortname+'_detail.png')
+	if data.flag_show: plt.show()
 	else: plt.close() 
 
 	# get maximum values

@@ -7,7 +7,7 @@ How to update the docker image
 
 - Make your changes.
 - $ systemctl start docker && docker login              # normally not needed.
-- $ docker build -t _tag_ _location_ --network = host   # builds image tagged _tag_ from Dockerfile in _location_
+- $ docker build -t _tag_ _location_ --network=host   # builds image tagged _tag_ from Dockerfile in _location_
 - $ docker image tag _tag_:latest mdaamkit/_tag_"       # maybe I could immediately tag it mdaamkit/mpi in the line before
 - $ docker image push mdaamkit/_tag_                    # pushing image to the dockerhub
 - $ docker image ls                                     # checking if you updated the image

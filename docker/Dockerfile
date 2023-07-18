@@ -4,6 +4,7 @@ FROM python:3.9
 
 ADD mics_pycbc_interface.py /
 RUN mkdir /output
+RUN mkdir /input
 
 RUN pip install matplotlib numpy pycbc
 RUN pip install wave resampy              # do we need this?
