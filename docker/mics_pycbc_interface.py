@@ -22,6 +22,24 @@ import numpy as np
 # I guess I don't need any methods for changing values as these objects probably won't live long enough
 # since the container will have to be restarted quite a few times.
 
+debugmode = True
+
+class TemplateBank:
+	def __init__(self):
+		self.list_of_templates = []
+	
+	def add_template(self, bankpath, filename):
+		'Add a single file to the TemplateBank.'
+		self.list_of_templates.append(Template(bankpath, filename))
+		if debugmode: print('Added ', self.list_of_templates[-1].shortname, ' to the TemplateBank.')
+	
+	# def add_directory(self, path):
+	# 	'Add all .hdf-files in path to the TemplateBank.'
+	# 	listofnames = [f for f in os.listdir(path) if f.endswith('.hdf')]
+	# 	listofnames.sort()
+	# 	for filename in listofnames:
+	# 		self.add_template(path, filename)
+
 class Template:
 	def __init__(self, path, filename):
 		self.path = path
@@ -208,8 +226,8 @@ def make_reference( m1, m2, samplerate=4096, duration=1.0, flag_show=False):
 	return hp
 
 
-def do_matched_filter(data, template):  # psd, f_low, these arguments were cut out now  # the 'do' in the name is important not to be mixed with the matched_filter() loaded form pycbc
-	'Perform the matched filtering.'
+def matched_filter_single(data, template):  # psd, f_low, these arguments were cut out now
+	'Perform the matched filtering of data with a single template.'
 
 	tmp = template.frequency_series  # readability
 
@@ -289,3 +307,18 @@ def do_matched_filter(data, template):  # psd, f_low, these arguments were cut o
 	Maxmatch = [matches[count_of_max],times[count_of_max]]
 
 	return matches, indices, times, Maxmatch
+
+
+def matched_filter_templatebank(data, templatebank):
+	'Perform the matched filtering of the data with every template inside a templatebank.'
+	# prepare output
+	dtype = [('templatename', (np.str_,40)), ('maxmatch', np.float64), ('maxtime', np.float64)]
+	writedata = np.array(np.arange(len(templatebank.list_of_templates)), dtype=dtype)
+	# calculate
+	for index,template in enumerate(templatebank.list_of_templates):
+		_,_,_,Maxmatch = matched_filter_single(data, template)
+		writedata[index] = template.shortname, Maxmatch[0], Maxmatch[1]
+	# save statistics
+	header = 'Matched Filteting results of '+data.shortname+': \n'
+	header += 'templatename, match, time of match'
+	np.savetxt(data.savepath+'00_matched_filtering_results.dat', writedata, fmt=['%s', '%f', '%f'], header=header)

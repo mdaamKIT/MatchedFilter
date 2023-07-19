@@ -26,6 +26,7 @@
 debugmode = True
 
 import docker
+from pathlib import Path
 
 class MPIConnection:
 	def __init__(self):
@@ -58,9 +59,24 @@ class MPIConnection:
 		self.add_read_dir(template.bankpath, templatepath_container)
 		self.script += 'template = mpi.Template("'+self.volumes[template.bankpath]['bind']+'","'+template.filename+'"); '
 
-	def matched_filter(self):
+	def transfer_templatebank(self, templatebank):
+		'Transfer a TemplateBank object from the templatebank_handler to mics_pycbc_interface inside the container.'
+		list_of_bankpaths_both = [(bankpath_host,'/input/templatebank/'+Path(bankpath_host).parts[-1]+'_'+str(distinction)+'/') for distinction, bankpath_host in enumerate(templatebank.list_of_bankpaths)]  # distinction because we really need unique names for different paths
+		for bankpath_both in list_of_bankpaths_both:
+			self.add_read_dir(bankpath_both[0], bankpath_both[1])
+		self.script += 'templatebank = mpi.TemplateBank(); '
+		for template in templatebank.list_of_templates:
+			self.script += 'templatebank.add_template("'+self.volumes[template.bankpath]['bind']+'","'+template.filename+'"); '
+
+	### !!!!! the following two methods could be integrated in the methods below (Matched_Filter_single/templatebank)
+
+	def matched_filter_single(self):
 		'Perform Matched Filtering inside the container.'
-		self.script += 'mpi.do_matched_filter( data, template ); '
+		self.script += 'mpi.matched_filter_single( data, template ); '
+
+	def matched_filter_templatebank(self):
+		self.script += 'mpi.matched_filter_templatebank( data, templatebank ); '
+
 
 	### running and stopping the container
 
@@ -89,12 +105,20 @@ class MPIConnection:
 	### finally composing everything (these method names are capitalized)
 	#      only these methods need to be called from outside this script.
 
-	def Matched_Filter(self, data, template):
+	def Matched_Filter_single(self, data, template):
 		'Composing a Matched Filtering with a single template.'
 		self.transfer_data(data)
 		self.transfer_template(template)
-		self.matched_filter()
+		self.matched_filter_single()
 		self.run()
+
+	def Matched_Filter_templatebank(self, data, templatebank):
+		'Composing a Matched Filtering with every template in the templatebank.'
+		self.transfer_data(data)
+		self.transfer_templatebank(templatebank)
+		self.matched_filter_templatebank()
+		self.run()
+
 
 
 ##### I have to make sure, flag_show is always False in windows!

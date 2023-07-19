@@ -49,10 +49,12 @@ else:
 class TemplateBank:
 	def __init__(self):
 		self.list_of_templates = []
+		self.list_of_bankpaths = []
 	
 	def add_template(self, bankpath, filename):
 		'Add a single file to the TemplateBank.'
 		self.list_of_templates.append(Template(bankpath, filename))
+		if not bankpath in self.list_of_bankpaths: self.list_of_bankpaths.append(bankpath)
 		print('Added ', self.list_of_templates[-1].shortname, ' to the TemplateBank.')
 	
 	def add_directory(self, path):
@@ -84,37 +86,15 @@ class Data:
 		'Tries to find a single template in the data.'
 		if not isinstance(template, Template):
 			raise TypeError('template has to be an instance of Template class but has type: ' + str(type(template)))
-		
 		connection.Matched_Filter(self, template)
 
-
-
-
-		### this has to be broken!
-		# but I save it to keep how results were returned previously
-		# def matched_filter(template, data)
-		# 	_,_,_,Maxmatch = do_matched_filter(template.frequency_series, data_segments, template.shortname, self.shortname, self.savepath, Data.flag_show)
-		# 	print()
-		# 	print('Matched filtering of '+self.shortname+' with '+template.shortname+': ')
-		# 	print(Maxmatch[0],' at ',Maxmatch[1],' sec.')
-
-
-	def matched_filter_templatebank(self, templatebank):
-		'Checks the data for all templates in the template bank.'
+	def matched_filter_templatebank(self, templatebank, connection):
+		'Performs Matched Filtering with every template in the templatebank.'
 		if not isinstance(templatebank, TemplateBank):
 			raise TypeError('templatebank has to be an instance of TemplateBank class but has type: ' + str(type(templatebank)))
-		dtype = [('templatename', (np.str_,40)), ('maxmatch', np.float64), ('maxtime', np.float64)]
-		writedata = np.array(np.arange(len(templatebank.list_of_templates)), dtype=dtype)
-		# calculate
-		for index,template in enumerate(templatebank.list_of_templates):
-			template_freqseries = types.frequencyseries.load_frequencyseries(template.bankpath+template.filename)
-			_,_,_,Maxmatch = mpi.do_matched_filter(template_freqseries, self.data_segments, template.shortname, self.shortname, self.savepath, Data.flag_show)
-			writedata[index] = template.shortname, Maxmatch[0], Maxmatch[1]
-		# save statistics
-		header = 'Matched Filteting results of '+self.shortname+': \n'
-		header += 'templatename, match, time of match'
-		np.savetxt(self.savepath+'00_matched_filtering_results.dat', writedata, fmt=['%s', '%f', '%f'], header=header)
+		connection.Matched_Filter_templatebank(self, templatebank)
 
+	### !!!!! I guess, the following ones are not needed and could be deleted.
 
 	def set_datapath(self, newpath):
 		self.datapath = newpath
