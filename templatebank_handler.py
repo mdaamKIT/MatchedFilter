@@ -14,6 +14,9 @@ if OS == 'windows':
 else:
 	import communicate_to_mpi_linux as ctm
 
+### !!!! maybe I could import communicate_to_mpi_windows as mpi for windows and mpi as mpi for linux?
+#         Maybe this is a bad idea, as I need the connection-object stable? Can it just be created (and destroyed) by calling a mpi-function
+
 
 
 ### About the templatebank_handler and mics_pycbc_interface
@@ -75,7 +78,7 @@ class Data:
 		self.datapath = datapath
 		self.filename = filename
 		self.shortname = filename[:-4]
-		self.savepath = self.datapath+'/'+self.shortname
+		self.savepath = self.datapath+self.shortname+'/'
 		# Some settings are fixed so far. They can be changed with explicitly calling their changing methods (see below) but there should be no need.
 		self.flag_show = False
 		self.preferred_samplerate = 4096

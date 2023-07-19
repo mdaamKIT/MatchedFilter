@@ -20,13 +20,17 @@ class SoundofMI(QMainWindow):
 	# set defaults
 	cwd = os.getcwd()
 	defaultbankpath = 'C:/Users/Praktikum/Desktop/LIGO/template_bank/'
-	templatebank = handler.TemplateBank()
-	
+
 	def __init__(self):
 	    ### general settings and initiation of ui
 	    super(SoundofMI,self).__init__()
 	    loadUi(SoundofMI.cwd+'/matchedfilter.ui',self)
 	    self.setWindowTitle('Matched Filtering with pycbc')
+	    self.templatebank = handler.TemplateBank()
+	    self.connection = handler.connect()
+	    mpi_path_host = '/home/mic/promotion/f-prakt_material/LIGO/pycbc/MatchedFilter/'
+	    mpi_path_container = '/input/mpi/'
+	    self.connection.update_mpi(mpi_path_host, mpi_path_container)
 	    ## initiate Push Buttons
 	    # 1 input section
 	    self.pushButton_loadsignal.clicked.connect(self.loadsignal)
@@ -34,10 +38,10 @@ class SoundofMI(QMainWindow):
 	    self.pushButton_loadbank.clicked.connect(self.loadbank)
 	    self.pushButton_loadtemplate.clicked.connect(self.loadtemplate)
 	    self.pushButton_tbchangepath.clicked.connect(self.changetbsavepath)
-	    self.pushButton_bank.clicked.connect(self.bankcheck)
+	    self.pushButton_bank.clicked.connect(self.matchedfilter_templatebank)
 	    # 2b Matched Filtering with single file
 	    self.pushButton_stchangepath.clicked.connect(self.changestsavepath)
-	    self.pushButton_single.clicked.connect(self.singlecheck)
+	    self.pushButton_single.clicked.connect(self.matchedfilter_single)
 	    ## initiate feedback for user
 	    if debugmode:
 	    	self.label_showstatus.setText('ready')
@@ -118,10 +122,10 @@ class SoundofMI(QMainWindow):
 		self.label_sigfile.setText(fullname)
 		self.label_evastatus.setText('Loaded signal: '+filename)
 		self.label_evastatus_2.setText('Loaded signal: '+filename)
-		self.label_tboutpath.setText(self.dataobj.parentpath)
-		self.lineEdit_tbcaption.setText(filename[:-4])
-		self.label_stoutpath.setText(self.dataobj.parentpath)
-		self.lineEdit_stcaption.setText(filename[:-4])
+		self.label_tboutpath.setText(self.dataobj.savepath)
+		self.lineEdit_tbcaption.setText('deactivated')
+		self.label_stoutpath.setText(self.dataobj.savepath)
+		self.lineEdit_stcaption.setText('deactivated')
 		self.show()
 		self.endmethod(methodname)
 		return
@@ -163,19 +167,19 @@ class SoundofMI(QMainWindow):
 	def changetbsavepath(self):
 		methodname = 'change output path'
 		self.beginmethod(methodname)
-		newpath = self.getDirectoryDialog('Choose the new output directory.', self.dataobj.parentpath)
+		newpath = self.getDirectoryDialog('Choose the new output directory.', self.dataobj.datapath)
 		self.label_tboutpath.setText(newpath)
 		self.show()
 		self.endmethod(methodname)
 		return
 
 	@pyqtSlot()
-	def bankcheck(self):
+	def matchedfilter_templatebank(self):
 		methodname = 'matched filtering with template bank'
 		self.beginmethod(methodname)
-		self.dataobj.setparentpath(self.label_tboutpath.text())
-		self.dataobj.setshortname(self.lineEdit_tbcaption.text())
-		self.dataobj.check_bank(self.templatebank)
+		self.dataobj.set_savepath(self.label_tboutpath.text())
+		# self.dataobj.set_shortname(self.lineEdit_tbcaption.text())  # deactivated
+		self.dataobj.matched_filter_templatebank(self.templatebank, self.connection)
 		self.endmethod(methodname)
 		return
 
@@ -183,14 +187,14 @@ class SoundofMI(QMainWindow):
 	def changestsavepath(self):
 		methodname = 'change output path'
 		self.beginmethod(methodname)
-		newpath = self.getDirectoryDialog('Choose the new output directory.', self.dataobj.parentpath)
+		newpath = self.getDirectoryDialog('Choose the new output directory.', self.dataobj.datapath)
 		self.label_stoutpath.setText(newpath)
 		self.show()
 		self.endmethod(methodname)
 		return
 
 	@pyqtSlot()
-	def singlecheck(self):
+	def matchedfilter_single(self):
 		methodname = 'matched filtering with single template'
 		self.beginmethod(methodname)
 		fullname = self.openFileNameDialog('Choose Template File.', self.defaultbankpath)
@@ -200,9 +204,9 @@ class SoundofMI(QMainWindow):
 		self.begintask(taskname)
 		self.tmpobj = handler.Template(path, filename)
 		self.endtask(taskname)
-		self.dataobj.setparentpath(self.label_stoutpath.text())
-		self.dataobj.setshortname(self.lineEdit_stcaption.text())
-		self.dataobj.check_template(self.tmpobj)
+		self.dataobj.set_savepath(self.label_stoutpath.text())
+		# self.dataobj.set_shortname(self.lineEdit_stcaption.text())  # deactivated
+		self.dataobj.matched_filter_single(self.tmpobj, self.connection)
 		self.endmethod(methodname)
 		return
 
