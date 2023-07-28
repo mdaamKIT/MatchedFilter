@@ -67,6 +67,25 @@ class TemplateBank:
 		for filename in listofnames:
 			self.add_template(path, filename)
 
+	def create_templates(self, array_masses, bankpath, basename, flag_Mr=False, freq_domain=True, time_domain=False):
+		'Creates templates and adds them to the templatebank.'
+		local_connection = ctm.MPIConnection()    # We establish a parallel connection, to create templates independently and in between other commands on connection.
+		local_connection.update_mpi(os.getcwd(), '/input/mpi/')
+		local_connection.Create_Templates(array_masses, bankpath, basename, flag_Mr, freq_domain, time_domain)
+		# now I still have to add those to the templatebank
+
+######### I have to delete this, but first see, where it gets called
+	def create_templates_Mr(self, array_Mr, bankpath, basename, freq_domain=True, time_domain=False):
+		'Calculates masses m1 and m2 from sum (M) and ratio (r) of masses and calls create_templates.'
+		# array_Mr should be a numpy array of dim 2xN.
+		M = array_Mr[0]
+		r = array_Mr[1]
+		m2 = M/(r+1)
+		m1 = r*m2
+		array_masses = np.asarray((m1,m2))
+		self.create_templates(array_masses, bankpath, basename, False, freq_domain, time_domain)
+
+
 class Template:
 	def __init__(self, bankpath, filename):
 		self.bankpath = bankpath

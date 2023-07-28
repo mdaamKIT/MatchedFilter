@@ -192,8 +192,8 @@ def segment_data(filename, preferred_samplerate=4096, segment_duration=1):
 	return data_segments
 
 
-def make_reference( m1, m2, samplerate=4096, duration=1.0, flag_show=False):
-	'Create a reference template in the frequency-domain.'
+def make_template( m1, m2, samplerate=4096, duration=1.0, flag_show=False ):
+	'Create a template in frequency-domain or time-domain or both.'
 
 	# some hard-coded settings
 	apx = 'SEOBNRv4'   # by now I just randomly picked any
@@ -221,10 +221,45 @@ def make_reference( m1, m2, samplerate=4096, duration=1.0, flag_show=False):
 		plt.show()
 
 	# transform to a FrequencySeries
-	hp = hp.to_frequencyseries()
+	hp_freq = hp.to_frequencyseries()
 
-	return hp
+	return hp_freq, hp
 
+
+def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_domain):
+	'Creates templates for further use in matched filtering (freq_domain) or as signals (time_domain).'
+	# parameters should be a numpy array of dim 2xN; flag_Mr, freq_domain and time_domain should be boolean.
+	masses = parameters
+	parameter_name = 'mm'
+	if flag_Mr:
+		M = parameters[0]
+		r = parameters[1]
+		m2 = M/(r+1)
+		m1 = r*m2
+		masses = np.asarray((m1,m2))
+		parameter_name = 'Mr'
+
+	for index,m1 in enumerate(masses[0]):
+		m2 = masses[1][index]
+		# The pycbc-function in use raises a RuntimeError, if die Ringdown frequency is too high which occurs often with low masses.
+		try:
+			strain_freq, strain_time = make_template(m1,m2)
+			name = basename+parameter_name+'-'+str(index)+'_'+str(round(parameters[0][index]))+'-'+str(round(parameters[1][index]))
+			if freq_domain: strain_freq.save(savepath+name+'.hdf')
+			if time_domain: strain_time.save_to_wav(savepath+name+'.wav')
+		except RuntimeError:
+			errorstring = parameter_name+'-'+str(index)+' '+str(parameters[0][index])+', '+str(parameters[1][index])+': There was a RuntimeError; probably your masses '+str(m1)+', '+str(m2)+' were too low.\n'
+			print(errorstring)
+			with open(savepath+'errors.txt', 'a') as errorfile:
+				errorfile.write(errorstring)
+		except:
+			errorstring = parameter_name+'-'+str(index)+' '+str(parameters[0][index])+', '+str(parameters[1][index])+': unexpected Error with masses '+str(m1)+', '+str(m2)+'\n'
+			print(errorstring)
+			with open(savepath+'errors.txt', 'a') as errorfile:
+				errorfile.write(errorstring)
+
+
+		
 
 def matched_filter_single(data, template):  # psd, f_low, these arguments were cut out now
 	'Perform the matched filtering of data with a single template.'

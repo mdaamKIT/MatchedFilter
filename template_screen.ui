@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1003</width>
-    <height>284</height>
+    <height>289</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -161,7 +161,7 @@
              </font>
             </property>
             <property name="text">
-             <string>  most recent Templates:</string>
+             <string>  most recent loaded Templates:</string>
             </property>
            </widget>
           </item>
@@ -216,6 +216,13 @@
          </layout>
         </item>
        </layout>
+      </item>
+      <item>
+       <widget class="Line" name="line_continue">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
       </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_continue">

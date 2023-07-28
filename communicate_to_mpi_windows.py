@@ -78,6 +78,7 @@ class MPIConnection:
 		self.script += 'mpi.matched_filter_templatebank( data, templatebank ); '
 
 
+
 	### running and stopping the container
 
 	def run(self):
@@ -102,6 +103,8 @@ class MPIConnection:
 		self.add_read_dir(path_host, path_container)
 		self.commands.append('cp '+path_container+'mics_pycbc_interface.py /')
 
+
+
 	### finally composing everything (these method names are capitalized)
 	#      only these methods need to be called from outside this script.
 
@@ -119,6 +122,17 @@ class MPIConnection:
 		self.matched_filter_templatebank()
 		self.run()
 
+	def Create_Templates(self, parameters, bankpath_host, basename, flag_Mr, freq_domain, time_domain):
+		'Creates templates for further use in matched filtering (freq_domain) or as signals (time_domain).'
+		# parameters should be a numpy array of dim 2xN; flag_Mr, freq_domain and time_domain should be boolean.
+		# Hint: a seperate MPIConnection object should be called for creating these files to not interfere with the matched filtering.
+		self.add_output_dir(bankpath_host, '/output')
+		transfer_file = 'parameters.txt'
+		parameters.tofile(bankpath_host+transfer_file)
+		self.script += 'import numpy as np; '
+		self.script += 'parameters = np.fromfile("/output/'+transfer_file+'").reshape((2,-1)); '
+		self.script += 'mpi.create_templates(parameters, "/output/", "'+basename+'", '+str(flag_Mr)+', '+str(freq_domain)+', '+str(time_domain)+'); '
+		self.run()
 
 
 ##### I have to make sure, flag_show is always False in windows!
