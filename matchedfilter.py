@@ -2,7 +2,7 @@
 
 # This is the main-File.
 
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QButtonGroup
 from PyQt5.uic import loadUi
 

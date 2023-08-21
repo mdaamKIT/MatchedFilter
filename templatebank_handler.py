@@ -3,7 +3,6 @@
 import os
 import glob
 import numpy as np
-import pycbc.types as types
 
 ### Select OS and establish a connection object to communicate to mpi
 
