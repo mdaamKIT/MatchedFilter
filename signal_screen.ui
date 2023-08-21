@@ -6,159 +6,78 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1003</width>
-    <height>300</height>
+    <width>1000</width>
+    <height>293</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QScrollArea" name="scrollArea">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>1001</width>
-      <height>851</height>
-     </rect>
-    </property>
-    <property name="widgetResizable">
-     <bool>true</bool>
-    </property>
-    <widget class="QWidget" name="scrollAreaWidgetContents">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>999</width>
-       <height>849</height>
-      </rect>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_main">
+      <property name="leftMargin">
+       <number>10</number>
+      </property>
+      <property name="topMargin">
+       <number>10</number>
+      </property>
+      <property name="rightMargin">
+       <number>10</number>
+      </property>
+      <property name="bottomMargin">
+       <number>10</number>
+      </property>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_main">
-        <property name="leftMargin">
-         <number>10</number>
-        </property>
-        <property name="topMargin">
-         <number>10</number>
-        </property>
-        <property name="rightMargin">
-         <number>10</number>
-        </property>
-        <property name="bottomMargin">
-         <number>10</number>
-        </property>
-        <item>
-         <layout class="QGridLayout" name="gridLayout_loading">
-          <item row="5" column="0">
-           <widget class="QLabel" name="label_Output">
-            <property name="font">
-             <font>
-              <italic>true</italic>
-             </font>
-            </property>
-            <property name="text">
-             <string>  None</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="Line" name="line_Signal">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_Signal">
-            <property name="font">
-             <font>
-              <italic>true</italic>
-             </font>
-            </property>
-            <property name="text">
-             <string>  None</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_SignalHeadline">
-            <property name="font">
-             <font>
-              <pointsize>12</pointsize>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="text">
-             <string>Signal</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <spacer name="horizontalSpacer_loading">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Fixed</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>10</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="2" column="2">
-           <widget class="QPushButton" name="pushButton_loadSignal">
-            <property name="text">
-             <string>Load Signal</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="label_PathHeadline">
-            <property name="font">
-             <font>
-              <underline>false</underline>
-             </font>
-            </property>
-            <property name="text">
-             <string>Output path:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <spacer name="verticalSpacer_loading">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Fixed</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>15</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="5" column="2">
-           <widget class="QPushButton" name="pushButton_changeOutput">
-            <property name="text">
-             <string>Change output</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
+       <layout class="QGridLayout" name="gridLayout_loading">
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_Output">
+          <property name="font">
+           <font>
+            <italic>true</italic>
+           </font>
+          </property>
+          <property name="text">
+           <string>  None</string>
+          </property>
+         </widget>
         </item>
-        <item>
-         <spacer name="horizontalSpacer_main">
+        <item row="1" column="0">
+         <widget class="Line" name="line_Signal">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_Signal">
+          <property name="font">
+           <font>
+            <italic>true</italic>
+           </font>
+          </property>
+          <property name="text">
+           <string>  None</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_SignalHeadline">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Signal</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <spacer name="horizontalSpacer_loading">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
@@ -167,197 +86,255 @@
           </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>40</width>
+            <width>10</width>
             <height>20</height>
            </size>
           </property>
          </spacer>
         </item>
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_Status">
-          <item>
-           <widget class="QLabel" name="label_TempHeading">
-            <property name="font">
-             <font>
-              <pointsize>12</pointsize>
-              <weight>75</weight>
-              <bold>true</bold>
-              <underline>false</underline>
-             </font>
-            </property>
-            <property name="text">
-             <string>Templates</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line_Temp">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_TempRecent">
-            <property name="font">
-             <font>
-              <italic>false</italic>
-              <underline>false</underline>
-             </font>
-            </property>
-            <property name="text">
-             <string>  most recent loaded Templates:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_TempLine1">
-            <property name="font">
-             <font>
-              <italic>true</italic>
-             </font>
-            </property>
-            <property name="text">
-             <string>        None</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_TempLine2">
-            <property name="font">
-             <font>
-              <italic>true</italic>
-             </font>
-            </property>
-            <property name="text">
-             <string>        None</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_TempLine3">
-            <property name="font">
-             <font>
-              <italic>true</italic>
-             </font>
-            </property>
-            <property name="text">
-             <string>        None</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_TempLine4">
-            <property name="font">
-             <font>
-              <italic>true</italic>
-             </font>
-            </property>
-            <property name="text">
-             <string>        no more</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
+        <item row="2" column="2">
+         <widget class="QPushButton" name="pushButton_loadSignal">
+          <property name="text">
+           <string>Load Signal</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_PathHeadline">
+          <property name="font">
+           <font>
+            <underline>false</underline>
+           </font>
+          </property>
+          <property name="text">
+           <string>Output path:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <spacer name="verticalSpacer_loading">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>15</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="5" column="2">
+         <widget class="QPushButton" name="pushButton_changeOutput">
+          <property name="text">
+           <string>Change output</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
       <item>
-       <widget class="Line" name="line_go">
+       <spacer name="horizontalSpacer_main">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-       </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_Go">
-        <property name="leftMargin">
-         <number>10</number>
-        </property>
-        <property name="topMargin">
-         <number>10</number>
-        </property>
-        <property name="rightMargin">
-         <number>10</number>
-        </property>
-        <property name="bottomMargin">
-         <number>10</number>
-        </property>
-        <item>
-         <widget class="QPushButton" name="pushButton_back">
-          <property name="text">
-           <string>Back to Templates</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_GoLeft">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_go">
-          <property name="text">
-           <string>Start Matched Filtering:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_GoRight">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Fixed</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>15</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_go">
-          <property name="text">
-           <string>Go!</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <spacer name="verticalSpacer_fill">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>20</width>
-          <height>40</height>
+          <width>40</width>
+          <height>20</height>
          </size>
         </property>
        </spacer>
       </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_Status">
+        <item>
+         <widget class="QLabel" name="label_TempHeading">
+          <property name="font">
+           <font>
+            <pointsize>12</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+            <underline>false</underline>
+           </font>
+          </property>
+          <property name="text">
+           <string>Templates</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_Temp">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_TempRecent">
+          <property name="font">
+           <font>
+            <italic>false</italic>
+            <underline>false</underline>
+           </font>
+          </property>
+          <property name="text">
+           <string>  most recent loaded Templates:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_TempLine1">
+          <property name="font">
+           <font>
+            <italic>true</italic>
+           </font>
+          </property>
+          <property name="text">
+           <string>        None</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_TempLine2">
+          <property name="font">
+           <font>
+            <italic>true</italic>
+           </font>
+          </property>
+          <property name="text">
+           <string>        None</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_TempLine3">
+          <property name="font">
+           <font>
+            <italic>true</italic>
+           </font>
+          </property>
+          <property name="text">
+           <string>        None</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_TempLine4">
+          <property name="font">
+           <font>
+            <italic>true</italic>
+           </font>
+          </property>
+          <property name="text">
+           <string>        no more</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
      </layout>
-    </widget>
-   </widget>
+    </item>
+    <item>
+     <widget class="Line" name="line_go">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_Go">
+      <property name="leftMargin">
+       <number>10</number>
+      </property>
+      <property name="topMargin">
+       <number>10</number>
+      </property>
+      <property name="rightMargin">
+       <number>10</number>
+      </property>
+      <property name="bottomMargin">
+       <number>10</number>
+      </property>
+      <item>
+       <widget class="QPushButton" name="pushButton_back">
+        <property name="text">
+         <string>Back to Templates</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_GoLeft">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_go">
+        <property name="text">
+         <string>Start Matched Filtering:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_GoRight">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>15</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_go">
+        <property name="text">
+         <string>Go!</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <spacer name="verticalSpacer_fill">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1003</width>
+     <width>1000</width>
      <height>22</height>
     </rect>
    </property>

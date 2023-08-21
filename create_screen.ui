@@ -6,43 +6,452 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1003</width>
-    <height>587</height>
+    <width>1000</width>
+    <height>589</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <horstretch>1</horstretch>
+    <verstretch>1</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QScrollArea" name="scrollArea">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>1001</width>
-      <height>851</height>
-     </rect>
-    </property>
-    <property name="widgetResizable">
-     <bool>true</bool>
-    </property>
-    <widget class="QWidget" name="scrollAreaWidgetContents">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>999</width>
-       <height>849</height>
-      </rect>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+     <horstretch>1</horstretch>
+     <verstretch>1</verstretch>
+    </sizepolicy>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout_Parameter">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetMaximumSize</enum>
+      </property>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>10</number>
+      </property>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout_Parameter">
+       <layout class="QHBoxLayout" name="horizontalLayout_togglePara">
+        <property name="leftMargin">
+         <number>10</number>
+        </property>
+        <property name="topMargin">
+         <number>10</number>
+        </property>
+        <property name="rightMargin">
+         <number>10</number>
+        </property>
+        <property name="bottomMargin">
+         <number>10</number>
+        </property>
+        <item>
+         <widget class="QRadioButton" name="radioButton_Mr">
+          <property name="text">
+           <string>Use total mass (M = m1+m2) and mass ratio (r = m1/m2)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="radioButton_m1m2">
+          <property name="text">
+           <string>Use individual masses (m1, m2)</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_units">
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>  [ All masses in units of solar masses. The constructor below uses this command: numpy.linspace(start, stop, num=number, endpoint=True) ]</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>10</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <layout class="QGridLayout" name="gridLayout_Parameter">
+        <property name="leftMargin">
+         <number>10</number>
+        </property>
+        <property name="topMargin">
+         <number>10</number>
+        </property>
+        <property name="rightMargin">
+         <number>10</number>
+        </property>
+        <property name="bottomMargin">
+         <number>10</number>
+        </property>
+        <item row="2" column="9">
+         <widget class="QCheckBox" name="checkBox_Para1Code">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="3">
+         <spacer name="horizontalSpacer_start">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="2" column="7">
+         <spacer name="horizontalSpacer_number">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>10</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_Parameter2">
+          <property name="text">
+           <string>mass ratio (r)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="5">
+         <spacer name="horizontalSpacer_stop">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="3" column="9">
+         <widget class="QCheckBox" name="checkBox_Para2Code">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QLabel" name="label_start">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>start</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="9">
+         <widget class="QLabel" name="label_useCode">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>use</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="6">
+         <widget class="QLabel" name="label_number">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>number</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_Parameter1">
+          <property name="text">
+           <string>total mass (M)</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="4">
+         <widget class="QLabel" name="label_stop">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>stop</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="8">
+         <widget class="Line" name="line_Para1">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="10">
+         <widget class="QLabel" name="label_code">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>python list</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="margin">
+           <number>0</number>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="8">
+         <widget class="Line" name="line_Para2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <spacer name="horizontalSpacer_name">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="1" column="8">
+         <widget class="Line" name="line_Heading">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2">
+         <widget class="QLineEdit" name="lineEdit_Para1Start">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>1</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2">
+         <widget class="QLineEdit" name="lineEdit_Para2Start">
+          <property name="text">
+           <string>1</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="4">
+         <widget class="QLineEdit" name="lineEdit_Para1Stop">
+          <property name="text">
+           <string>50</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="4">
+         <widget class="QLineEdit" name="lineEdit_Para2Stop">
+          <property name="text">
+           <string>5</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="6">
+         <widget class="QLineEdit" name="lineEdit_Para1Number">
+          <property name="text">
+           <string>9</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="6">
+         <widget class="QLineEdit" name="lineEdit_Para2Number">
+          <property name="text">
+           <string>9</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="10">
+         <widget class="QLineEdit" name="lineEdit_Para1Code">
+          <property name="text">
+           <string>[10., 15., 20., 25., 30., 35., 40., 45., 50. ]</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="10">
+         <widget class="QLineEdit" name="lineEdit_Para2Code">
+          <property name="text">
+           <string>[1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5. ]</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <spacer name="verticalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>10</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_toggleAll">
+        <property name="leftMargin">
+         <number>10</number>
+        </property>
+        <property name="topMargin">
+         <number>10</number>
+        </property>
+        <property name="rightMargin">
+         <number>10</number>
+        </property>
+        <property name="bottomMargin">
+         <number>10</number>
+        </property>
+        <item>
+         <widget class="QRadioButton" name="radioButton_AllOn">
+          <property name="text">
+           <string>Use all combinations (e.g. [1,1]; [1,2]; [1,3]; [2,3]; ...)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="radioButton_AllOff">
+          <property name="text">
+           <string>Use only corresponding (e.g. [1,1] ; [2,2] ; [3,3]; ...)</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <spacer name="verticalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>10</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_outputSettings">
         <property name="leftMargin">
          <number>0</number>
         </property>
         <property name="topMargin">
-         <number>0</number>
+         <number>10</number>
         </property>
         <property name="rightMargin">
          <number>0</number>
@@ -51,7 +460,7 @@
          <number>10</number>
         </property>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_togglePara">
+         <layout class="QVBoxLayout" name="verticalLayout_path">
           <property name="leftMargin">
            <number>10</number>
           </property>
@@ -62,622 +471,126 @@
            <number>10</number>
           </property>
           <property name="bottomMargin">
-           <number>10</number>
+           <number>5</number>
           </property>
           <item>
-           <widget class="QRadioButton" name="radioButton_Mr">
+           <widget class="QLabel" name="label_captionFilename">
             <property name="text">
-             <string>Use total mass (M = m1+m2) and mass ratio (r = m1/m2)</string>
+             <string>Filenames:</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="radioButton_m1m2">
-            <property name="text">
-             <string>Use individual masses (m1, m2)</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_units">
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-            <italic>true</italic>
-           </font>
-          </property>
-          <property name="text">
-           <string>  [ All masses in units of solar masses. The constructor below uses this command: numpy.linspace(start, stop, num=number, endpoint=True) ]</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Fixed</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>10</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <layout class="QGridLayout" name="gridLayout_Parameter">
-          <property name="leftMargin">
-           <number>10</number>
-          </property>
-          <property name="topMargin">
-           <number>10</number>
-          </property>
-          <property name="rightMargin">
-           <number>10</number>
-          </property>
-          <property name="bottomMargin">
-           <number>10</number>
-          </property>
-          <item row="2" column="9">
-           <widget class="QCheckBox" name="checkBox_Para1Code">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="3">
-           <spacer name="horizontalSpacer_start">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Fixed</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="2" column="7">
-           <spacer name="horizontalSpacer_number">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Fixed</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>10</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="label_Parameter2">
-            <property name="text">
-             <string>mass ratio (r)</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="5">
-           <spacer name="horizontalSpacer_stop">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Fixed</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="3" column="9">
-           <widget class="QCheckBox" name="checkBox_Para2Code">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QLabel" name="label_start">
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>start</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="9">
-           <widget class="QLabel" name="label_useCode">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>use</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="6">
-           <widget class="QLabel" name="label_number">
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>number</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_Parameter1">
-            <property name="text">
-             <string>total mass (M)</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="4">
-           <widget class="QLabel" name="label_stop">
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>stop</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="8">
-           <widget class="Line" name="line_Para1">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="10">
-           <widget class="QLabel" name="label_code">
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>python list</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-            <property name="margin">
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <property name="leftMargin">
              <number>0</number>
             </property>
-           </widget>
-          </item>
-          <item row="3" column="8">
-           <widget class="Line" name="line_Para2">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <spacer name="horizontalSpacer_name">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Fixed</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="1" column="8">
-           <widget class="Line" name="line_Heading">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <widget class="QLineEdit" name="lineEdit_Para1Start">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>1</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="2">
-           <widget class="QLineEdit" name="lineEdit_Para2Start">
-            <property name="text">
-             <string>1</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="4">
-           <widget class="QLineEdit" name="lineEdit_Para1Stop">
-            <property name="text">
-             <string>50</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="4">
-           <widget class="QLineEdit" name="lineEdit_Para2Stop">
-            <property name="text">
-             <string>5</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="6">
-           <widget class="QLineEdit" name="lineEdit_Para1Number">
-            <property name="text">
-             <string>9</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="6">
-           <widget class="QLineEdit" name="lineEdit_Para2Number">
-            <property name="text">
-             <string>9</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="10">
-           <widget class="QLineEdit" name="lineEdit_Para1Code">
-            <property name="text">
-             <string>[10., 15., 20., 25., 30., 35., 40., 45., 50. ]</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="10">
-           <widget class="QLineEdit" name="lineEdit_Para2Code">
-            <property name="text">
-             <string>[1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5. ]</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Fixed</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>10</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_toggleAll">
-          <property name="leftMargin">
-           <number>10</number>
-          </property>
-          <property name="topMargin">
-           <number>10</number>
-          </property>
-          <property name="rightMargin">
-           <number>10</number>
-          </property>
-          <property name="bottomMargin">
-           <number>10</number>
-          </property>
-          <item>
-           <widget class="QRadioButton" name="radioButton_AllOn">
-            <property name="text">
-             <string>Use all combinations (e.g. [1,1]; [1,2]; [1,3]; [2,3]; ...)</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="radioButton_AllOff">
-            <property name="text">
-             <string>Use only corresponding (e.g. [1,1] ; [2,2] ; [3,3]; ...)</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <spacer name="verticalSpacer_3">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Fixed</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>10</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_outputSettings">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>10</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>10</number>
-          </property>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_path">
-            <property name="leftMargin">
-             <number>10</number>
-            </property>
             <property name="topMargin">
-             <number>10</number>
-            </property>
-            <property name="rightMargin">
-             <number>10</number>
-            </property>
-            <property name="bottomMargin">
-             <number>5</number>
+             <number>0</number>
             </property>
             <item>
-             <widget class="QLabel" name="label_captionFilename">
+             <widget class="QLineEdit" name="lineEdit_FilenameBase"/>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_FilenameExt">
               <property name="text">
-               <string>Filenames:</string>
+               <string>+'Mr-[index]_[M]-[r]'</string>
               </property>
              </widget>
             </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_2">
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLineEdit" name="lineEdit_FilenameBase"/>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_FilenameExt">
-                <property name="text">
-                 <string>+'Mr-[index]_[M]-[r]'</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_captionPath">
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_captionPath">
+            <property name="text">
+             <string>Output path:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_path">
+            <property name="font">
+             <font>
+              <italic>true</italic>
+             </font>
+            </property>
+            <property name="text">
+             <string>None</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_which">
+          <property name="leftMargin">
+           <number>10</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="label_which">
+            <property name="text">
+             <string>Which templates to create?</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QGridLayout" name="gridLayout_whichCheckBoxes">
+            <item row="0" column="1">
+             <widget class="QCheckBox" name="checkBox_time">
               <property name="text">
-               <string>Output path:</string>
+               <string>time domain</string>
               </property>
              </widget>
             </item>
-            <item>
-             <widget class="QLabel" name="label_path">
+            <item row="0" column="0">
+             <widget class="QCheckBox" name="checkBox_freq">
+              <property name="text">
+               <string>frequency domain</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_freq">
               <property name="font">
                <font>
+                <pointsize>10</pointsize>
                 <italic>true</italic>
                </font>
               </property>
               <property name="text">
-               <string>None</string>
+               <string>(for matched filtering)</string>
               </property>
              </widget>
             </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_which">
-            <property name="leftMargin">
-             <number>10</number>
-            </property>
-            <property name="rightMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QLabel" name="label_which">
+            <item row="1" column="1">
+             <widget class="QLabel" name="label_time">
+              <property name="font">
+               <font>
+                <pointsize>10</pointsize>
+                <italic>true</italic>
+               </font>
+              </property>
               <property name="text">
-               <string>Which templates to create?</string>
+               <string>(e.g. as input for the detector)</string>
               </property>
              </widget>
             </item>
-            <item>
-             <layout class="QGridLayout" name="gridLayout_whichCheckBoxes">
-              <item row="0" column="1">
-               <widget class="QCheckBox" name="checkBox_time">
-                <property name="text">
-                 <string>time domain</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0">
-               <widget class="QCheckBox" name="checkBox_freq">
-                <property name="text">
-                 <string>frequency domain</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_freq">
-                <property name="font">
-                 <font>
-                  <pointsize>10</pointsize>
-                  <italic>true</italic>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>(for matched filtering)</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLabel" name="label_time">
-                <property name="font">
-                 <font>
-                  <pointsize>10</pointsize>
-                  <italic>true</italic>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>(e.g. as input for the detector)</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
            </layout>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_create">
-          <property name="leftMargin">
-           <number>10</number>
-          </property>
-          <property name="topMargin">
-           <number>5</number>
-          </property>
-          <property name="rightMargin">
-           <number>10</number>
-          </property>
-          <property name="bottomMargin">
-           <number>10</number>
-          </property>
-          <item>
-           <widget class="QPushButton" name="pushButton_changeOutput">
-            <property name="text">
-             <string>Change output path</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_createLeft">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Expanding</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_create">
-            <property name="text">
-             <string>Create and load Templates</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_createRight">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Fixed</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>15</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_create">
-            <property name="text">
-             <string>Create</string>
-            </property>
-           </widget>
           </item>
          </layout>
         </item>
        </layout>
       </item>
       <item>
-       <widget class="Line" name="line_back">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_back">
+       <layout class="QHBoxLayout" name="horizontalLayout_create">
         <property name="leftMargin">
          <number>10</number>
         </property>
         <property name="topMargin">
-         <number>10</number>
+         <number>5</number>
         </property>
         <property name="rightMargin">
          <number>10</number>
@@ -686,27 +599,40 @@
          <number>10</number>
         </property>
         <item>
-         <spacer name="horizontalSpacer_backLeft">
+         <widget class="QPushButton" name="pushButton_changeOutput">
+          <property name="text">
+           <string>Change output path</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_createLeft">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Expanding</enum>
+          </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>40</width>
+            <width>20</width>
             <height>20</height>
            </size>
           </property>
          </spacer>
         </item>
         <item>
-         <widget class="QLabel" name="label_back">
+         <widget class="QLabel" name="label_create">
           <property name="text">
-           <string>Back to Templates loading Screen</string>
+           <string>Create and load Templates</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
         <item>
-         <spacer name="horizontalSpacer_backRight">
+         <spacer name="horizontalSpacer_createRight">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
@@ -722,37 +648,103 @@
          </spacer>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_back">
+         <widget class="QPushButton" name="pushButton_create">
           <property name="text">
-           <string>Back</string>
+           <string>Create</string>
           </property>
          </widget>
         </item>
        </layout>
       </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="Line" name="line_back">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_back">
+      <property name="leftMargin">
+       <number>10</number>
+      </property>
+      <property name="topMargin">
+       <number>10</number>
+      </property>
+      <property name="rightMargin">
+       <number>10</number>
+      </property>
+      <property name="bottomMargin">
+       <number>10</number>
+      </property>
       <item>
-       <spacer name="verticalSpacer_fill">
+       <spacer name="horizontalSpacer_backLeft">
         <property name="orientation">
-         <enum>Qt::Vertical</enum>
+         <enum>Qt::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>20</width>
-          <height>40</height>
+          <width>40</width>
+          <height>20</height>
          </size>
         </property>
        </spacer>
       </item>
+      <item>
+       <widget class="QLabel" name="label_back">
+        <property name="text">
+         <string>Back to Templates loading Screen</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_backRight">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>15</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_back">
+        <property name="text">
+         <string>Back</string>
+        </property>
+       </widget>
+      </item>
      </layout>
-    </widget>
-   </widget>
+    </item>
+    <item>
+     <spacer name="verticalSpacer_fill">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1003</width>
+     <width>1000</width>
      <height>22</height>
     </rect>
    </property>
