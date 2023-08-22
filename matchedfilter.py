@@ -17,8 +17,8 @@ import templatebank_handler as handler  # selfmade; defines classes for matched 
 ### Get conifguration
 config = ConfigParser()
 config.read('config.ini')
-OS = config.get('main', 'OS')
-debugmode = config.get('main', 'debugmode')
+debugmode = config.getboolean('main', 'debugmode')
+print(debugmode, type(debugmode))
 bankpath = config.get('main', 'bankpath')
 
 
@@ -30,6 +30,7 @@ connection = handler.connect()
 ### !!!!!!!!!!!!! could be removed in the end:
 if debugmode: 
 	connection.update_mpi(mpi_path_host, mpi_path_container)
+
 
 
 class Screen(QMainWindow):   # Superclass where the different Screens following inherit common methods from.
@@ -67,14 +68,14 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 
 	@pyqtSlot()
 	def to_signal_screen(self):
-		labels = ( self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() )
+		labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
 		self.main = SignalScreen(self.templatebank, labels)
 		self.main.show()
 		self.close()
 
 	@pyqtSlot()
 	def to_create_screen(self):
-		labels = ( self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() )
+		labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
 		self.main = CreateScreen(self.templatebank, labels)
 		self.main.show()
 		self.close()
@@ -149,6 +150,7 @@ class TemplateScreen(Screen):
 		self.label_TempLine1.setText(label)
 		self.show()
 		return
+
 
 
 class CreateScreen(Screen):
@@ -268,6 +270,15 @@ class CreateScreen(Screen):
 		freq_domain = self.checkBox_freq.isChecked()
 		time_domain = self.checkBox_time.isChecked()
 		self.templatebank.create_templates(array, self.path, basename, self.flag_Mr, freq_domain, time_domain)
+		# add the new templates to the templatebank
+		self.templatebank.add_directory(self.path)
+		label = self.make_label(self.path, 48, 8)
+		if not self.labels[2]=='None':
+			self.labels[3] = 'and more'
+		self.labels[2] = self.labels[1]
+		self.labels[1] = self.labels[0]
+		self.labels[0] = label
+		self.show()
 
 	
 
@@ -311,6 +322,7 @@ class SignalScreen(Screen):
 	def matched_filter(self):
 		self.data.matched_filter_templatebank(self.templatebank, connection)
 		return
+
 
 
 # open Window

@@ -3,11 +3,14 @@
 import os
 import glob
 import numpy as np
+from configparser import ConfigParser
 
-### Select OS and establish a connection object to communicate to mpi
+### Get OS from config.ini and establish a connection object to communicate to mpi
 
+config = ConfigParser()
+config.read('config.ini')
+OS = config.get('main', 'OS')
 
-OS = 'windows'   #  Either 'windows' or 'linux'. (In fact, either 'windows' or something else. I guess on a mac this might work as if linux, but I was not able/willing hard enough to test.)
 if OS == 'windows':
 	import communicate_to_mpi_windows as ctm
 else:

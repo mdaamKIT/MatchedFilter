@@ -22,8 +22,11 @@
 #       At the end of the run() function, the container will be stopped and deleted and the MPIConnection variables are set back to their initial values.
 #       Now you could start again, configuring the container.
 
+from configparser import ConfigParser
 
-debugmode = True
+config = ConfigParser()
+config.read('config.ini')
+debugmode = config.getboolean('main', 'debugmode')
 
 import docker
 from pathlib import Path
