@@ -8,19 +8,22 @@ from PyQt5.uic import loadUi
 
 import sys
 import os
+from configparser import ConfigParser
 import ast
 import numpy as np
 import templatebank_handler as handler  # selfmade; defines classes for matched filtering
 
 
-### Get defaults
-bankpath_default = '/home/mic/test/'
-# bankpath_default_2 = "C:/Users/Praktikum/Desktop/LIGO/template_bank"
+### Get conifguration
+config = ConfigParser()
+config.read('config.ini')
+OS = config.get('main', 'OS')
+debugmode = config.get('main', 'debugmode')
+bankpath = config.get('main', 'bankpath')
+
 
 ### General settings
 cwd = os.getcwd()
-debugmode = True
-
 mpi_path_host = cwd
 mpi_path_container = '/input/mpi/'
 connection = handler.connect()
@@ -28,28 +31,54 @@ connection = handler.connect()
 if debugmode: 
 	connection.update_mpi(mpi_path_host, mpi_path_container)
 
-# The different Screens could be subclasses of a greater Screen-class and inherit some methods from there?
 
+class Screen(QMainWindow):   # Superclass where the different Screens following inherit common methods from.
 
-class TemplateScreen(QMainWindow):
-
+	### initiation
 	def __init__(self, templatebank, labels=None):
-		# general settings and initiation of ui
-		super(TemplateScreen,self).__init__()
-		loadUi(cwd+'/template_screen.ui',self)
-		self.setWindowTitle('Matched Filtering with pycbc (Template Management)')
+		super().__init__()
+		# set status
 		self.templatebank = templatebank
-		# connect Push Buttons
-		self.pushButton_createTemplates.clicked.connect(self.to_create_screen)
-		self.pushButton_loadDirectory.clicked.connect(self.load_directory)
-		self.pushButton_loadFile.clicked.connect(self.load_file)
-		self.pushButton_continue.clicked.connect(self.to_signal_screen)
-		# set Status
-		if labels:
-			self.label_TempLine1.setText(labels[0])
-			self.label_TempLine2.setText(labels[1])
-			self.label_TempLine3.setText(labels[2])
-			self.label_TempLine4.setText(labels[3])	
+		self.labels = labels
+	
+
+	### label handling
+	def show_labels(self):
+		self.label_TempLine1.setText(self.labels[0])
+		self.label_TempLine2.setText(self.labels[1])
+		self.label_TempLine3.setText(self.labels[2])
+		self.label_TempLine4.setText(self.labels[3])
+
+	def make_label(self, string, maxlen, indent):
+		'Cut a string from the start so it does not exceed maxlen, even with dots and indentation.'
+		label = string
+		if len(label) > (maxlen-indent):
+			label = '...'+label[-(maxlen-indent-3):]
+		label = ' '*indent+label
+		return label
+
+
+	### changing screens
+	@pyqtSlot()
+	def to_template_screen(self):
+		self.main = TemplateScreen(self.templatebank, self.labels)
+		self.main.show()
+		self.close()
+
+	@pyqtSlot()
+	def to_signal_screen(self):
+		labels = ( self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() )
+		self.main = SignalScreen(self.templatebank, labels)
+		self.main.show()
+		self.close()
+
+	@pyqtSlot()
+	def to_create_screen(self):
+		labels = ( self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() )
+		self.main = CreateScreen(self.templatebank, labels)
+		self.main.show()
+		self.close()
+
 
 	### methods for file-Dialogs
 	# see: https://pythonspot.com/pyqt5-file-dialog/
@@ -63,7 +92,7 @@ class TemplateScreen(QMainWindow):
 	def openFileNamesDialog(self):
 		options = QFileDialog.Options()
 		options |= QFileDialog.DontUseNativeDialog
-		files, _ = QFileDialog.getOpenFileNames(self,"Open Template-File(s)", bankpath_default_2,"All Files (*);;Python Files (*.py)", options=options)
+		files, _ = QFileDialog.getOpenFileNames(self,"Open Template-File(s)", bankpath,"All Files (*);;Python Files (*.py)", options=options)
 		if files:
 			return files
 
@@ -75,10 +104,27 @@ class TemplateScreen(QMainWindow):
 		if dirName:
 			return dirName
 
+
+
+class TemplateScreen(Screen):
+
+	def __init__(self, templatebank, labels=None):
+		# general settings and initiation of ui
+		super().__init__(templatebank, labels)
+		loadUi(cwd+'/template_screen.ui',self)
+		self.setWindowTitle('Matched Filtering with pycbc (Template Management)')
+		self.templatebank = templatebank
+		if labels: self.show_labels()
+		# connect Push Buttons
+		self.pushButton_createTemplates.clicked.connect(self.to_create_screen)
+		self.pushButton_loadDirectory.clicked.connect(self.load_directory)
+		self.pushButton_loadFile.clicked.connect(self.load_file)
+		self.pushButton_continue.clicked.connect(self.to_signal_screen)
+
 	### methods connected with Push Buttons
 	@pyqtSlot()
 	def load_directory(self):
-		path = self.getDirectoryDialog("Choose the directory to be loaded.", bankpath_default)
+		path = self.getDirectoryDialog("Choose the directory to be loaded.", bankpath)
 		self.templatebank.add_directory(path)
 		label = self.make_label(path, 48, 8)
 		if not self.label_TempLine3.text()=='None':
@@ -104,42 +150,19 @@ class TemplateScreen(QMainWindow):
 		self.show()
 		return
 
-	@pyqtSlot()
-	def to_signal_screen(self):
-		labels = ( self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() )
-		self.main = SignalScreen(self.templatebank, labels)
-		self.main.show()
-		self.close()
 
-	@pyqtSlot()
-	def to_create_screen(self):
-		labels = ( self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() )
-		self.main = CreateScreen(self.templatebank, labels)
-		self.main.show()
-		self.close()
-
-	### additional methods
-	def make_label(self, string, maxlen, indent):
-		'Cut a string from the start so it does not exceed maxlen, even with dots and indentation.'
-		label = string
-		if len(label) > (maxlen-indent):
-			label = '...'+label[-(maxlen-indent-3):]
-		label = ' '*indent+label
-		return label
-
-
-class CreateScreen(QMainWindow):
+class CreateScreen(Screen):
 
 	def __init__(self, templatebank, labels=None):
 		# general settings and initiation of ui
-		super(CreateScreen,self).__init__()
+		super().__init__(templatebank, labels)
 		loadUi(cwd+'/create_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Template Creation)')
 		self.templatebank = templatebank
 		self.labels = labels
 		self.flag_Mr = True
 		self.flag_All = True
-		self.path = bankpath_default
+		self.path = bankpath
 		self.label_path.setText(self.path)
 		# connect pushButtons
 		self.pushButton_changeOutput.clicked.connect(self.change_output)
@@ -161,14 +184,6 @@ class CreateScreen(QMainWindow):
 		self.checkBox_Para2Code.setChecked(False)
 		self.checkBox_freq.setChecked(True)
 		self.checkBox_time.setChecked(False)
-
-	def getDirectoryDialog(self, DialogName, defaultpath):
-		options = QFileDialog.Options()
-		options |= QFileDialog.DontUseNativeDialog
-		options |= QFileDialog.ShowDirsOnly
-		dirName = QFileDialog.getExistingDirectory(self, DialogName, defaultpath, options=options)+'/'
-		if dirName:
-			return dirName
 
 	@pyqtSlot()
 	def change_output(self):
@@ -241,14 +256,6 @@ class CreateScreen(QMainWindow):
 
 		return array
 
-	### additional methods
-	def make_label(self, string, maxlen, indent):
-		'Cut a string from the start so it does not exceed maxlen, even with dots and indentation.'
-		label = string
-		if len(label) > (maxlen-indent):
-			label = '...'+label[-(maxlen-indent-3):]
-		label = ' '*indent+label
-		return label
 
 	@pyqtSlot()
 	def create_templates(self):
@@ -262,18 +269,13 @@ class CreateScreen(QMainWindow):
 		time_domain = self.checkBox_time.isChecked()
 		self.templatebank.create_templates(array, self.path, basename, self.flag_Mr, freq_domain, time_domain)
 
-	@pyqtSlot()
-	def to_template_screen(self):
-		self.main = TemplateScreen(self.templatebank, self.labels)
-		self.main.show()
-		self.close()
 	
 
-class SignalScreen(QMainWindow):
+class SignalScreen(Screen):
 
 	def __init__(self, templatebank, labels):
 		# general settings and initiation of ui
-		super(SignalScreen,self).__init__()
+		super().__init__(templatebank, labels)
 		loadUi(cwd+'/signal_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Matched Filtering)')
 		self.templatebank = templatebank
@@ -283,35 +285,7 @@ class SignalScreen(QMainWindow):
 		self.pushButton_go.clicked.connect(self.matched_filter)
 		self.pushButton_back.clicked.connect(self.to_template_screen)
 		# set Status
-		if labels:
-			self.label_TempLine1.setText(labels[0])
-			self.label_TempLine2.setText(labels[1])
-			self.label_TempLine3.setText(labels[2])
-			self.label_TempLine4.setText(labels[3])		
-
-	### methods for file-Dialogs
-	# see: https://pythonspot.com/pyqt5-file-dialog/
-	def openFileNameDialog(self, DialogName, defaultpath):
-		options = QFileDialog.Options()
-		options |= QFileDialog.DontUseNativeDialog
-		fileName, _ = QFileDialog.getOpenFileName(self, DialogName, defaultpath ,"All Files (*);;Python Files (*.py)", options=options)
-		if fileName:
-			return fileName
-
-	def openFileNamesDialog(self):
-		options = QFileDialog.Options()
-		options |= QFileDialog.DontUseNativeDialog
-		files, _ = QFileDialog.getOpenFileNames(self,"Open Template-File(s)", bankpath_default_2,"All Files (*);;Python Files (*.py)", options=options)
-		if files:
-			return files
-
-	def getDirectoryDialog(self, DialogName, defaultpath):
-		options = QFileDialog.Options()
-		options |= QFileDialog.DontUseNativeDialog
-		options |= QFileDialog.ShowDirsOnly
-		dirName = QFileDialog.getExistingDirectory(self, DialogName, defaultpath, options=options)+'/'
-		if dirName:
-			return dirName
+		if labels: self.show_labels()
 
 	### methods connected with Push Buttons
 	@pyqtSlot()
@@ -337,22 +311,6 @@ class SignalScreen(QMainWindow):
 	def matched_filter(self):
 		self.data.matched_filter_templatebank(self.templatebank, connection)
 		return
-
-	@pyqtSlot()
-	def to_template_screen(self):
-		labels = ( self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() )
-		self.main = TemplateScreen(self.templatebank, labels)
-		self.main.show()
-		self.close()
-
-	### additional methods
-	def make_label(self, string, maxlen, indent):
-		'Cut a string from the start so it does not exceed maxlen, even with dots and indentation.'
-		label = string
-		if len(label) > (maxlen-indent):
-			label = '...'+label[-(maxlen-indent-3):]
-		label = ' '*indent+label
-		return label
 
 
 # open Window
