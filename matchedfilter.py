@@ -19,8 +19,8 @@ import templatebank_handler as handler  # selfmade; defines classes for matched 
 config = ConfigParser()
 config.read('config.ini')
 debugmode = config.getboolean('main', 'debugmode')
-print(debugmode, type(debugmode))
 bankpath = config.get('main', 'bankpath')
+if debugmode: bankpath = '/home/mic/promotion/f-prakt_material/LIGO/pycbc/MatchedFilter/tests/05_pre-final-tests/matchedfilter_testfiles/templates/'
 
 
 ### General settings
@@ -254,14 +254,14 @@ class CreateScreen(Screen):
 			self.flag_Mr = True
 			self.label_Parameter1.setText('total mass (M)')
 			self.label_Parameter2.setText('mass ratio (r)')
-			self.label_FilenameExt.setText("+'Mr-[index]_[M]-[r]'")
+			self.label_FilenameExt.setText("+'Mr_[M]-[r]'")
 			self.show()
 			if debugmode: print('Mr')
 		else:
 			self.flag_Mr = False
 			self.label_Parameter1.setText('mass 1 (m1)')
 			self.label_Parameter2.setText('mass 2 (m2)')
-			self.label_FilenameExt.setText("+'mm-[index]_[m1]-[m2]'")
+			self.label_FilenameExt.setText("+'mm_[m1]-[m2]'")
 			self.show()
 			if debugmode: print('m1m2')
 
@@ -297,17 +297,16 @@ class CreateScreen(Screen):
 			array2 = np.linspace(start2, stop2, num=num2, endpoint=True)
 
 		# merge according to flag_All
-		pre_array = np.asarray((array1,array2))
 		if self.flag_All:
-			array = np.zeros( (2, len(pre_array[0])*len(pre_array[1])) )
+			array = np.zeros( (2, len(array1)*len(array2)) )
 			counter = 0
-			for elem1 in pre_array[0]:
-				for elem2 in pre_array[1]:
+			for elem1 in array1:
+				for elem2 in array2:
 					array[0][counter] = elem1
 					array[1][counter] = elem2
 					counter += 1
 		else:
-			length = np.minimum( len(pre_array[0]), len(pre_array[1]) )
+			length = np.minimum( array1, array2 )
 			array = np.asarray( (array1[:length], array2[:length]) )
 
 		return array

@@ -8,6 +8,7 @@ import resampy     # https://resampy.readthedocs.io/en/stable/example.html
 import os
 import wave
 import numpy as np
+from collections import defaultdict
 
 ### About
 #   -----
@@ -229,6 +230,7 @@ def make_template( m1, m2, samplerate=4096, duration=1.0, flag_show=False ):
 def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_domain):
 	'Creates templates for further use in matched filtering (freq_domain) or as signals (time_domain).'
 	# parameters should be a numpy array of dim 2xN; flag_Mr, freq_domain and time_domain should be boolean.
+	N = len(parameters[0])
 	masses = parameters
 	parameter_name = 'mm'
 	if flag_Mr:
@@ -239,24 +241,45 @@ def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_
 		masses = np.asarray((m1,m2))
 		parameter_name = 'Mr'
 
+	# create names and make distinctions between names if necessary
+	list_of_names = ['']*N
+	for index in range(N):
+		name_0 = str(round(parameters[0][index]))
+		name_1 = str(round(parameters[1][index]))
+		if flag_Mr:
+			name_1 = str(round(parameters[1][index]*1000))
+		list_of_names[index] = basename+parameter_name+'_'+name_0+'-'+name_1
+	D = defaultdict(list)
+	for i,name in enumerate(list_of_names):
+		D[name].append(i)
+	list_appendices = []
+	for name in D:
+		duplicates = D[name][1:]
+		for number,name_index in enumerate(duplicates):
+			list_of_names[name_index] = list_of_names[name_index]+'_'+str(number+2)
+
 	for index,m1 in enumerate(masses[0]):
 		m2 = masses[1][index]
+		name = list_of_names[index]
 		# The pycbc-function in use raises a RuntimeError, if die Ringdown frequency is too high which occurs often with low masses.
 		try:
 			strain_freq, strain_time = make_template(m1,m2)
-			name = basename+parameter_name+'-'+str(index)+'_'+str(round(parameters[0][index]))+'-'+str(round(parameters[1][index]))
-			if freq_domain: strain_freq.save(savepath+name+'.hdf')
-			if time_domain: strain_time.save_to_wav(savepath+name+'.wav')
 		except RuntimeError:
-			errorstring = parameter_name+'-'+str(index)+' '+str(parameters[0][index])+', '+str(parameters[1][index])+': There was a RuntimeError; probably your masses '+str(m1)+', '+str(m2)+' were too low.\n'
+			errorstring = name+': There was a RuntimeError; probably your masses '+str(m1)+', '+str(m2)+' were too low.\n'
 			print(errorstring)
 			with open(savepath+'errors.txt', 'a') as errorfile:
 				errorfile.write(errorstring)
 		except:
-			errorstring = parameter_name+'-'+str(index)+' '+str(parameters[0][index])+', '+str(parameters[1][index])+': unexpected Error with masses '+str(m1)+', '+str(m2)+'\n'
+			errorstring = name+': unexpected Error with masses '+str(m1)+', '+str(m2)+'\n'
 			print(errorstring)
 			with open(savepath+'errors.txt', 'a') as errorfile:
 				errorfile.write(errorstring)
+		if freq_domain: 
+			try:
+				strain_freq.save(savepath+name+'.hdf')
+			except ValueError:
+				pass
+		if time_domain: strain_time.save_to_wav(savepath+name+'.wav')
 
 
 		
