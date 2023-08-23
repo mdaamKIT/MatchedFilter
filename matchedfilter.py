@@ -2,9 +2,10 @@
 
 # This is the main-File.
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QObject, QThread
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QButtonGroup
 from PyQt5.uic import loadUi
+import threading
 
 import sys
 import os
@@ -30,6 +31,59 @@ connection = handler.connect()
 ### !!!!!!!!!!!!! could be removed in the end:
 if debugmode: 
 	connection.update_mpi(mpi_path_host, mpi_path_container)
+
+
+class CreateTemplatesWorker(QObject):
+	finished = pyqtSignal()
+	progress = pyqtSignal(int)
+
+	def __init__(self, templatebank, array, path, basename, flag_Mr, freq_domain, time_domain):
+		super().__init__()
+		self.templatebank = templatebank
+		self.array = array
+		self.path = path
+		self.basename = basename
+		self.flag_Mr = flag_Mr
+		self.freq_domain = freq_domain
+		self.time_domain = time_domain
+
+	def create_templates(self):
+		'Create templates from the user-input.'
+		################   !!!!!!!!!!!!!!!!!!     I should call an Error here. (following line)
+		if not os.path.isdir(self.path): print('Output path does not exist.')
+		self.progress.emit(0)
+		templatebank.create_templates(self.array, self.path, self.basename, self.flag_Mr, self.freq_domain, self.time_domain)
+		self.progress.emit(1)
+		# add the new templates to the templatebank
+		self.templatebank.add_directory(self.path)
+		self.progress.emit(2)
+		self.finished.emit()
+
+		### lets not implement this not, but later                 ######################################
+		# label = self.make_label(self.path, 48, 8)
+		# if not self.labels[2]=='None':
+		# 	self.labels[3] = 'and more'
+		# self.labels[2] = self.labels[1]
+		# self.labels[1] = self.labels[0]
+		# self.labels[0] = label
+		# self.show()
+
+
+class MatchedFilteringWorker(QObject):
+	finished = pyqtSignal()
+	progress = pyqtSignal(int)
+
+	def __init__(self, data, templatebank, connection):
+		super().__init__()
+		self.data = data
+		self.templatebank = templatebank
+		self.connection = connection
+
+	def matched_filter(self):
+		self.data.matched_filter_templatebank(self.templatebank, connection)
+
+	# Look at the Worker above for how feedback could be sent back.
+
 
 
 
@@ -258,27 +312,37 @@ class CreateScreen(Screen):
 
 		return array
 
-
-	@pyqtSlot()
 	def create_templates(self):
-		'Create templates from the user-input.'
-		################   !!!!!!!!!!!!!!!!!!     I should call an Error here. (following line)
-		if not os.path.isdir(self.path): print('Output path does not exist.')
+		# We are following the example in the section "Using QThread to Prevent Freezing GUIs" from this website:
+		# https://realpython.com/python-pyqt-qthread/
+		
+		# create QThread object
+		self.thread = QThread()
+		# gather input for Worker
 		array = self.get_array()
-		basename = self.lineEdit_FilenameBase.text()
-		if debugmode: print('basename = ',basename)
+		basename = self.lineEdit_FilenameBase.text() 
 		freq_domain = self.checkBox_freq.isChecked()
 		time_domain = self.checkBox_time.isChecked()
-		self.templatebank.create_templates(array, self.path, basename, self.flag_Mr, freq_domain, time_domain)
-		# add the new templates to the templatebank
-		self.templatebank.add_directory(self.path)
-		label = self.make_label(self.path, 48, 8)
-		if not self.labels[2]=='None':
-			self.labels[3] = 'and more'
-		self.labels[2] = self.labels[1]
-		self.labels[1] = self.labels[0]
-		self.labels[0] = label
-		self.show()
+		# create Worker object and move it to thread
+		self.worker = CreateTemplatesWorker(self.templatebank, array, self.path, basename, self.flag_Mr, freq_domain, time_domain)
+		self.worker.moveToThread(self.thread)
+		# connect signals and slots
+		self.thread.started.connect(self.worker.create_templates)
+		self.worker.finished.connect(self.thread.quit)
+		self.worker.finished.connect(self.worker.deleteLater)
+		self.thread.finished.connect(self.thread.deleteLater)
+		# self.worker.progress.connect(self.reportProgress)   # has to be adjusted to my program
+		# start the thread
+		self.thread.start()
+
+		# Final resets  ## these have to be adjusted to my program
+		# self.longRunningBtn.setEnabled(False)
+		# self.thread.finished.connect(
+		# 	lambda: self.longRunningBtn.setEnabled(True)
+		# )
+		# self.thread.finished.connect(
+		# 	lambda: self.stepLabel.setText("Long-Running Step: 0")
+		# )
 
 	
 
@@ -320,8 +384,31 @@ class SignalScreen(Screen):
 
 	@pyqtSlot()
 	def matched_filter(self):
-		self.data.matched_filter_templatebank(self.templatebank, connection)
-		return
+		# We are following the example in the section "Using QThread to Prevent Freezing GUIs" from this website:
+		# https://realpython.com/python-pyqt-qthread/
+		
+		# create QThread object
+		self.thread = QThread()
+		# create Worker object and move it to thread
+		self.worker = MatchedFilteringWorker(self.data, self.templatebank, connection)
+		self.worker.moveToThread(self.thread)
+		# connect signals and slots
+		self.thread.started.connect(self.worker.matched_filter)
+		self.worker.finished.connect(self.thread.quit)
+		self.worker.finished.connect(self.worker.deleteLater)
+		self.thread.finished.connect(self.thread.deleteLater)
+		# self.worker.progress.connect(self.reportProgress)   # has to be adjusted to my program
+		# start the thread
+		self.thread.start()
+
+		# Final resets  ## these have to be adjusted to my program
+		# self.longRunningBtn.setEnabled(False)
+		# self.thread.finished.connect(
+		# 	lambda: self.longRunningBtn.setEnabled(True)
+		# )
+		# self.thread.finished.connect(
+		# 	lambda: self.stepLabel.setText("Long-Running Step: 0")
+		# )
 
 
 
