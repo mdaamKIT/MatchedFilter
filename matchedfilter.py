@@ -98,12 +98,6 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 	
 
 	### label handling
-	def show_labels(self):
-		self.label_TempLine1.setText(self.labels[0])
-		self.label_TempLine2.setText(self.labels[1])
-		self.label_TempLine3.setText(self.labels[2])
-		self.label_TempLine4.setText(self.labels[3])
-
 	def make_label(self, string, maxlen, indent):
 		'Cut a string from the start so it does not exceed maxlen, even with dots and indentation.'
 		label = string
@@ -111,6 +105,21 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 			label = '...'+label[-(maxlen-indent-3):]
 		label = ' '*indent+label
 		return label
+
+	def update_tmp_labels(self, new_label_raw):
+		new_label = self.make_label(new_label_raw, 48, 8)
+		if not self.labels[2]=='None':
+			self.labels[3]='and more'
+		self.labels[2] = self.labels[1]
+		self.labels[1] = self.labels[0]
+		self.labels[0] = new_label
+
+	def show_tmp_labels(self):
+		self.label_TempLine1.setText(self.labels[0])
+		self.label_TempLine2.setText(self.labels[1])
+		self.label_TempLine3.setText(self.labels[2])
+		self.label_TempLine4.setText(self.labels[3])
+		self.show()
 
 
 	### changing screens
@@ -169,7 +178,7 @@ class TemplateScreen(Screen):
 		loadUi(cwd+'/template_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Template Management)')
 		self.templatebank = templatebank
-		if labels: self.show_labels()
+		if labels: self.show_tmp_labels()
 		# connect Push Buttons
 		self.pushButton_createTemplates.clicked.connect(self.to_create_screen)
 		self.pushButton_loadDirectory.clicked.connect(self.load_directory)
@@ -181,13 +190,8 @@ class TemplateScreen(Screen):
 	def load_directory(self):
 		path = self.getDirectoryDialog("Choose the directory to be loaded.", bankpath)
 		self.templatebank.add_directory(path)
-		label = self.make_label(path, 48, 8)
-		if not self.label_TempLine3.text()=='None':
-			self.label_TempLine4.setText('and more')
-		self.label_TempLine3.setText(self.label_TempLine2.text())
-		self.label_TempLine2.setText(self.label_TempLine1.text())
-		self.label_TempLine1.setText(label)
-		self.show()
+		self.update_tmp_labels(path)
+		self.show_tmp_labels()
 		return
 
 	@pyqtSlot()
@@ -196,13 +200,8 @@ class TemplateScreen(Screen):
 		path = os.path.dirname(fullname)+'/'
 		filename = os.path.basename(fullname)
 		self.templatebank.add_template(path, filename)
-		label = self.make_label(fullname, 48, 8)
-		if not self.label_TempLine3.text()=='None':
-			self.label_TempLine4.setText('and more')
-		self.label_TempLine3.setText(self.label_TempLine2.text())
-		self.label_TempLine2.setText(self.label_TempLine1.text())
-		self.label_TempLine1.setText(label)
-		self.show()
+		self.update_tmp_labels(fullname)
+		self.show_tmp_labels()
 		return
 
 
@@ -343,6 +342,8 @@ class CreateScreen(Screen):
 		# 	lambda: self.stepLabel.setText("Long-Running Step: 0")
 		# )
 
+		self.update_tmp_labels(self.path)
+
 	
 
 class SignalScreen(Screen):
@@ -359,7 +360,7 @@ class SignalScreen(Screen):
 		self.pushButton_go.clicked.connect(self.matched_filter)
 		self.pushButton_back.clicked.connect(self.to_template_screen)
 		# set Status
-		if labels: self.show_labels()
+		if labels: self.show_tmp_labels()
 
 	### methods connected with Push Buttons
 	@pyqtSlot()

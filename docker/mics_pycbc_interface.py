@@ -9,6 +9,7 @@ import os
 import wave
 import numpy as np
 from collections import defaultdict
+from datetime import datetime
 
 ### About
 #   -----
@@ -264,25 +265,24 @@ def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_
 		# The pycbc-function in use raises a RuntimeError, if die Ringdown frequency is too high which occurs often with low masses.
 		try:
 			strain_freq, strain_time = make_template(m1,m2)
+			if time_domain: strain_time.save_to_wav(savepath+name+'.wav')
+			if freq_domain: strain_freq.save(savepath+name+'.hdf')
 		except RuntimeError:
-			errorstring = name+': There was a RuntimeError; probably your masses '+str(m1)+', '+str(m2)+' were too low.\n'
+			errorstring = name+' ('+str(datetime.now())+'): There was a RuntimeError; probably your masses '+str(m1)+', '+str(m2)+' were too low.\n'
+			print(errorstring)
+			with open(savepath+'errors.txt', 'a') as errorfile:
+				errorfile.write(errorstring)
+		except ValueError:
+			errorstring = name+' ('+str(datetime.now())+'): There was a ValueError; probably a .hdf-file of that name already existed.\n'
 			print(errorstring)
 			with open(savepath+'errors.txt', 'a') as errorfile:
 				errorfile.write(errorstring)
 		except:
-			errorstring = name+': unexpected Error with masses '+str(m1)+', '+str(m2)+'\n'
+			errorstring = name+' ('+str(datetime.now())+'): Unexpected Error with masses '+str(m1)+', '+str(m2)+'.\n'
 			print(errorstring)
 			with open(savepath+'errors.txt', 'a') as errorfile:
 				errorfile.write(errorstring)
-		if freq_domain: 
-			try:
-				strain_freq.save(savepath+name+'.hdf')
-			except ValueError:
-				pass
-		if time_domain: strain_time.save_to_wav(savepath+name+'.wav')
 
-
-		
 
 def matched_filter_single(data, template):  # psd, f_low, these arguments were cut out now
 	'Perform the matched filtering of data with a single template.'
