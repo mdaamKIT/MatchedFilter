@@ -233,7 +233,7 @@
       <item>
        <widget class="QLabel" name="label_continue">
         <property name="text">
-         <string>Continue to next Screen (choose Signal):</string>
+         <string>Continue to next Screen (load Data):</string>
         </property>
        </widget>
       </item>

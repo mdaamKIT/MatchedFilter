@@ -81,6 +81,8 @@ class MatchedFilteringWorker(QObject):
 
 	def matched_filter(self):
 		self.data.matched_filter_templatebank(self.templatebank, connection)
+		print('now finished?')
+		self.finished.emit()
 
 	# Look at the Worker above for how feedback could be sent back.
 
@@ -109,7 +111,7 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 	def update_tmp_labels(self, new_label_raw):
 		new_label = self.make_label(new_label_raw, 48, 8)
 		if not self.labels:
-			labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
+			self.labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
 		if not self.labels[2]=='None':
 			self.labels[3]='and more'
 		self.labels[2] = self.labels[1]
@@ -132,9 +134,9 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 		self.close()
 
 	@pyqtSlot()
-	def to_signal_screen(self):
+	def to_data_screen(self):
 		labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
-		self.main = SignalScreen(self.templatebank, labels)
+		self.main = DataScreen(self.templatebank, labels)
 		self.main.show()
 		self.close()
 
@@ -185,7 +187,7 @@ class TemplateScreen(Screen):
 		self.pushButton_createTemplates.clicked.connect(self.to_create_screen)
 		self.pushButton_loadDirectory.clicked.connect(self.load_directory)
 		self.pushButton_loadFile.clicked.connect(self.load_file)
-		self.pushButton_continue.clicked.connect(self.to_signal_screen)
+		self.pushButton_continue.clicked.connect(self.to_data_screen)
 
 	### methods connected with Push Buttons
 	@pyqtSlot()
@@ -348,16 +350,16 @@ class CreateScreen(Screen):
 
 	
 
-class SignalScreen(Screen):
+class DataScreen(Screen):
 
 	def __init__(self, templatebank, labels):
 		# general settings and initiation of ui
 		super().__init__(templatebank, labels)
-		loadUi(cwd+'/signal_screen.ui',self)
+		loadUi(cwd+'/data_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Matched Filtering)')
 		self.templatebank = templatebank
 		# connect Push Buttons
-		self.pushButton_loadSignal.clicked.connect(self.load_signal)
+		self.pushButton_loadData.clicked.connect(self.load_data)
 		self.pushButton_changeOutput.clicked.connect(self.change_output)
 		self.pushButton_go.clicked.connect(self.matched_filter)
 		self.pushButton_back.clicked.connect(self.to_template_screen)
@@ -366,12 +368,12 @@ class SignalScreen(Screen):
 
 	### methods connected with Push Buttons
 	@pyqtSlot()
-	def load_signal(self):
-		fullname = self.openFileNameDialog("Open Signal-File", "C:/Users/Praktikum/Desktop/LIGO")
+	def load_data(self):
+		fullname = self.openFileNameDialog("Open Data-File", "C:/Users/Praktikum/Desktop/LIGO")
 		path = os.path.dirname(fullname)+'/'
 		filename = os.path.basename(fullname)
 		self.data = handler.Data(path, filename)
-		self.label_Signal.setText( self.make_label(fullname, 35, 2) )
+		self.label_Data.setText( self.make_label(fullname, 35, 2) )
 		self.label_Output.setText( self.make_label(self.data.savepath,35,2) )
 		self.show()
 		return
