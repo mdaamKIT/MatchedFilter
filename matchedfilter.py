@@ -14,6 +14,15 @@ import ast
 import numpy as np
 import templatebank_handler as handler  # selfmade; defines classes for matched filtering
 
+# for the plot
+import time
+from matplotlib.backends.qt_compat import QtWidgets
+from matplotlib.backends.backend_qtagg import (
+    FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+
+
 
 ### Get conifguration
 config = ConfigParser()
@@ -81,7 +90,6 @@ class MatchedFilteringWorker(QObject):
 
 	def matched_filter(self):
 		self.data.matched_filter_templatebank(self.templatebank, connection)
-		print('now finished?')
 		self.finished.emit()
 
 	# Look at the Worker above for how feedback could be sent back.
@@ -92,10 +100,11 @@ class MatchedFilteringWorker(QObject):
 class Screen(QMainWindow):   # Superclass where the different Screens following inherit common methods from.
 
 	### initiation
-	def __init__(self, templatebank, labels=None):
+	def __init__(self, templatebank, data=None, labels=None):
 		super().__init__()
 		# set status
 		self.templatebank = templatebank
+		self.data = data
 		self.labels = labels
 	
 
@@ -129,21 +138,21 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 	### changing screens
 	@pyqtSlot()
 	def to_template_screen(self):
-		self.main = TemplateScreen(self.templatebank, self.labels)
+		self.main = TemplateScreen(self.templatebank, self.data, self.labels)
 		self.main.show()
 		self.close()
 
 	@pyqtSlot()
 	def to_data_screen(self):
 		labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
-		self.main = DataScreen(self.templatebank, labels)
+		self.main = DataScreen(self.templatebank, self.data, labels)
 		self.main.show()
 		self.close()
 
 	@pyqtSlot()
 	def to_create_screen(self):
 		labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
-		self.main = CreateScreen(self.templatebank, labels)
+		self.main = CreateScreen(self.templatebank, self.data, labels)
 		self.main.show()
 		self.close()
 
@@ -176,12 +185,13 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 
 class TemplateScreen(Screen):
 
-	def __init__(self, templatebank, labels=None):
+	def __init__(self, templatebank, data=None, labels=None):
 		# general settings and initiation of ui
 		super().__init__(templatebank, labels)
 		loadUi(cwd+'/template_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Template Management)')
 		self.templatebank = templatebank
+		self.data = data
 		if labels: self.show_tmp_labels()
 		# connect Push Buttons
 		self.pushButton_createTemplates.clicked.connect(self.to_create_screen)
@@ -212,12 +222,13 @@ class TemplateScreen(Screen):
 
 class CreateScreen(Screen):
 
-	def __init__(self, templatebank, labels=None):
+	def __init__(self, templatebank, data=None, labels=None):
 		# general settings and initiation of ui
 		super().__init__(templatebank, labels)
 		loadUi(cwd+'/create_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Template Creation)')
 		self.templatebank = templatebank
+		self.data = data
 		self.labels = labels
 		self.flag_Mr = True
 		self.flag_All = True
@@ -352,19 +363,22 @@ class CreateScreen(Screen):
 
 class DataScreen(Screen):
 
-	def __init__(self, templatebank, labels):
+	def __init__(self, templatebank, data=None, labels=None):
 		# general settings and initiation of ui
 		super().__init__(templatebank, labels)
 		loadUi(cwd+'/data_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Matched Filtering)')
 		self.templatebank = templatebank
+		self.data = data
+		self.labels = labels
 		# connect Push Buttons
 		self.pushButton_loadData.clicked.connect(self.load_data)
 		self.pushButton_changeOutput.clicked.connect(self.change_output)
 		self.pushButton_go.clicked.connect(self.matched_filter)
 		self.pushButton_back.clicked.connect(self.to_template_screen)
+		self.pushButton_plot.clicked.connect(self.plot_results)
 		# set Status
-		if labels: self.show_tmp_labels()
+		if self.labels: self.show_tmp_labels()
 
 	### methods connected with Push Buttons
 	@pyqtSlot()
@@ -413,6 +427,43 @@ class DataScreen(Screen):
 		# self.thread.finished.connect(
 		# 	lambda: self.stepLabel.setText("Long-Running Step: 0")
 		# )
+
+	@pyqtSlot()
+	def plot_results(self):
+		results_filename = self.data.savepath+'00_matched_filtering_results.dat'
+		print(results_filename)
+		results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time'), 'formats': ('S5', 'f4', 'f4')})
+		ratios = [1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.]
+		num_r = len(ratios)
+		counter = 0
+		L = len(results)
+		x = np.zeros(L)
+		y = np.zeros(L)
+		z = np.zeros(L)
+
+		for index in range(L):
+			[_,base,_] = str(results[index][0]).split("'")
+			[_,str_M] = base.split("_")
+			M = int(str_M)
+			r = ratios[counter]
+			counter +=1
+			if counter == num_r: 
+				counter = 0
+			m2 = M/(r+1)
+			m1 = r*m2
+
+			x[index] = int(m1)
+			y[index] = int(m2)
+			z[index] = results[index][1]
+
+		fig = plt.figure()
+		ax = fig.add_subplot(projection='3d')
+		ax.scatter(x,y,z)
+		ax.set_xlabel('mass 1')
+		ax.set_ylabel('mass 2')
+		ax.set_zlabel('match')
+
+		plt.show()
 
 
 
