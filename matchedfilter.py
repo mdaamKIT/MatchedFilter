@@ -108,6 +108,8 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 
 	def update_tmp_labels(self, new_label_raw):
 		new_label = self.make_label(new_label_raw, 48, 8)
+		if not self.labels:
+			labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
 		if not self.labels[2]=='None':
 			self.labels[3]='and more'
 		self.labels[2] = self.labels[1]
