@@ -378,7 +378,8 @@ class DataScreen(Screen):
 		self.pushButton_changeOutput.clicked.connect(self.change_output)
 		self.pushButton_go.clicked.connect(self.matched_filter)
 		self.pushButton_back.clicked.connect(self.to_template_screen)
-		self.pushButton_plot.clicked.connect(self.plot_results)
+		self.pushButton_plot_m1m2.clicked.connect(self.plot_results)
+		self.pushButton_plot_Mr.clicked.connect(self.plot_results_Mr)
 		# set Status
 		if self.labels: self.show_tmp_labels()
 
@@ -431,7 +432,11 @@ class DataScreen(Screen):
 		# )
 
 	@pyqtSlot()
-	def plot_results(self):
+	def plot_results_Mr(self):
+		self.plot_results(flag_Mr=True)
+
+	@pyqtSlot()
+	def plot_results(self, flag_Mr=False):
 		# load results
 		results_filename = self.data.savepath+'00_matched_filtering_results.dat'
 		print(results_filename)
@@ -445,13 +450,23 @@ class DataScreen(Screen):
 			x[index] = int(results[index][3])  # m1
 			y[index] = int(results[index][4])  # m2
 			z[index] = results[index][1]       # match
-
-		fig = plt.figure()
-		ax = fig.add_subplot(projection='3d')
-		ax.scatter(x,y,z)
-		ax.set_xlabel('mass 1')
-		ax.set_ylabel('mass 2')
-		ax.set_zlabel('match')
+		# plot
+		if flag_Mr:
+			M = x+y
+			r = x/y
+			fig = plt.figure()
+			ax = fig.add_subplot(projection='3d')
+			ax.scatter(M,r,z)
+			ax.set_xlabel('total mass')
+			ax.set_ylabel('mass ratio')
+			ax.set_zlabel('match')
+		else:
+			fig = plt.figure()
+			ax = fig.add_subplot(projection='3d')
+			ax.scatter(x,y,z)
+			ax.set_xlabel('mass 1')
+			ax.set_ylabel('mass 2')
+			ax.set_zlabel('match')
 		plt.show()
 
 

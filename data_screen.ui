@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1000</width>
-    <height>318</height>
+    <height>344</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -329,7 +329,7 @@
        <number>10</number>
       </property>
       <item>
-       <spacer name="horizontalSpacer_plot">
+       <spacer name="horizontalSpacer_plotLeft">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -342,9 +342,32 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_plot">
+       <widget class="QPushButton" name="pushButton_plot_Mr">
         <property name="text">
-         <string>Plot results</string>
+         <string>Plot results (M,r)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_plotRight">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>10</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_plot_m1m2">
+        <property name="text">
+         <string>Plot results (m1,m2)</string>
         </property>
        </widget>
       </item>
