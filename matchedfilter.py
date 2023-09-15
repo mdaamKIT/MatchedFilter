@@ -192,7 +192,9 @@ class TemplateScreen(Screen):
 		self.setWindowTitle('Matched Filtering with pycbc (Template Management)')
 		self.templatebank = templatebank
 		self.data = data
-		if labels: self.show_tmp_labels()
+		self.labels = labels
+		if self.labels: self.show_tmp_labels()
+
 		# connect Push Buttons
 		self.pushButton_createTemplates.clicked.connect(self.to_create_screen)
 		self.pushButton_loadDirectory.clicked.connect(self.load_directory)
@@ -430,31 +432,19 @@ class DataScreen(Screen):
 
 	@pyqtSlot()
 	def plot_results(self):
+		# load results
 		results_filename = self.data.savepath+'00_matched_filtering_results.dat'
 		print(results_filename)
-		results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time'), 'formats': ('S5', 'f4', 'f4')})
-		ratios = [1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.]
-		num_r = len(ratios)
-		counter = 0
+		results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time', 'm1', 'm2'), 'formats': ('S5', 'f4', 'f4', 'f4', 'f4')})
+		# shape arrays
 		L = len(results)
 		x = np.zeros(L)
 		y = np.zeros(L)
 		z = np.zeros(L)
-
 		for index in range(L):
-			[_,base,_] = str(results[index][0]).split("'")
-			[_,str_M] = base.split("_")
-			M = int(str_M)
-			r = ratios[counter]
-			counter +=1
-			if counter == num_r: 
-				counter = 0
-			m2 = M/(r+1)
-			m1 = r*m2
-
-			x[index] = int(m1)
-			y[index] = int(m2)
-			z[index] = results[index][1]
+			x[index] = int(results[index][3])  # m1
+			y[index] = int(results[index][4])  # m2
+			z[index] = results[index][1]       # match
 
 		fig = plt.figure()
 		ax = fig.add_subplot(projection='3d')
@@ -462,7 +452,6 @@ class DataScreen(Screen):
 		ax.set_xlabel('mass 1')
 		ax.set_ylabel('mass 2')
 		ax.set_zlabel('match')
-
 		plt.show()
 
 

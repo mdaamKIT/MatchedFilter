@@ -7,6 +7,7 @@ from pycbc.filter import matched_filter, match
 import resampy     # https://resampy.readthedocs.io/en/stable/example.html
 import os
 import wave
+import h5py
 import numpy as np
 from collections import defaultdict
 from datetime import datetime
@@ -48,7 +49,7 @@ class Template:
 		self.filename = filename
 		self.shortname = filename[:-4]
 
-		self.frequency_series = types.frequencyseries.load_frequencyseries(self.path+self.filename)
+		self.frequency_series, self.m1, self.m2 = load_FrequencySeries(self.path+self.filename)
 
 class Data:
 	def __init__(self, datapath, filename, savepath, preferred_samplerate, segment_duration, flag_show):
@@ -228,6 +229,39 @@ def make_template( m1, m2, samplerate=4096, duration=1.0, flag_show=False ):
 	return hp_freq, hp
 
 
+
+def save_FrequencySeries(freq_series, path, m1, m2):
+	'Modified copy of (parts of) pycbcs save() fct. in FrequencySeries to also save the masses.'
+	key = 'data'
+	with h5py.File(path, 'a') as f:
+		ds = f.create_dataset(key, data=freq_series.numpy(), compression='gzip', compression_opts=9, shuffle=True)
+		if freq_series.epoch is not None:
+			ds.attrs['epoch'] = float(freq_series.epoch)
+		ds.attrs['delta_f'] = float(freq_series.delta_f)
+		ds.attrs['m1'] = m1
+		ds.attrs['m2'] = m2
+
+
+
+def load_FrequencySeries(path):
+	'Modified copy of (parts of) pycbcs types.frequencyseries.load_frequencyseries() to also load the saved masses.'
+	key = 'data'
+	with h5py.File(path, 'r') as f:
+		data = f[key][:]
+		delta_f = f[key].attrs['delta_f']
+		epoch = f[key].attrs['epoch'] if 'epoch' in f[key].attrs else None
+		series = types.frequencyseries.FrequencySeries(data, delta_f=delta_f, epoch=epoch)
+		m1 = 0.
+		m2 = 0.
+		try:
+			m1 = f[key].attrs['m1']
+			m2 = f[key].attrs['m2']
+		except NameError:
+			print('File ',path,' does not have masses m1, m2 as attributes; seems not to be created by the latest version of this software.')
+	return series, m1, m2
+
+
+
 def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_domain):
 	'Creates templates for further use in matched filtering (freq_domain) or as signals (time_domain).'
 	# parameters should be a numpy array of dim 2xN; flag_Mr, freq_domain and time_domain should be boolean.
@@ -266,7 +300,7 @@ def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_
 		try:
 			strain_freq, strain_time = make_template(m1,m2)
 			if time_domain: strain_time.save_to_wav(savepath+name+'.wav')
-			if freq_domain: strain_freq.save(savepath+name+'.hdf')
+			if freq_domain: save_FrequencySeries(strain_freq, savepath+name+'.hdf', m1, m2)
 		except RuntimeError:
 			errorstring = name+' ('+str(datetime.now())+'): There was a RuntimeError; probably your masses '+str(m1)+', '+str(m2)+' were too low.\n'
 			print(errorstring)
@@ -370,13 +404,13 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 def matched_filter_templatebank(data, templatebank):
 	'Perform the matched filtering of the data with every template inside a templatebank.'
 	# prepare output
-	dtype = [('templatename', (np.str_,40)), ('maxmatch', np.float64), ('maxtime', np.float64)]
+	dtype = [('templatename', (np.str_,40)), ('maxmatch', np.float64), ('maxtime', np.float64), ('m1', np.float64), ('m2', np.float64)]
 	writedata = np.array(np.arange(len(templatebank.list_of_templates)), dtype=dtype)
 	# calculate
 	for index,template in enumerate(templatebank.list_of_templates):
 		_,_,_,Maxmatch = matched_filter_single(data, template)
-		writedata[index] = template.shortname, Maxmatch[0], Maxmatch[1]
+		writedata[index] = template.shortname, Maxmatch[0], Maxmatch[1], template.m1, template.m2
 	# save statistics
 	header = 'Matched Filteting results of '+data.shortname+': \n'
-	header += 'templatename, match, time of match'
-	np.savetxt(data.savepath+'00_matched_filtering_results.dat', writedata, fmt=['%s', '%f', '%f'], header=header)
+	header += 'templatename, match, time of match, template-m1, template-m2'
+	np.savetxt(data.savepath+'00_matched_filtering_results.dat', writedata, fmt=['%s', '%f', '%f', '%f', '%f'], header=header)
