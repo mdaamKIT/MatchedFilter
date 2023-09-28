@@ -176,7 +176,7 @@ def segment_data(filename, preferred_samplerate=4096, segment_duration=1):
 
 	# load and resample with preferred_samplerate
 	samplerate,track = load_wav(filename, channel='unclear')
-	newtrack = resampy.resample(track, samplerate, preferred_samplerate)
+	newtrack = resampy.resample(track, samplerate, preferred_samplerate)  # resampling with pycbc did not work, since the recording samplerate is not right. (I guess would have to be a multiple of 2.)
 	newtrack = newtrack.astype(np.float64)
 	
 	# fill with zeros till length is a multiple of segment_length / 2
@@ -418,13 +418,14 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 	index1 = int(indices[count_of_max])
 	plot_tmp = np.concatenate( (np.asarray(tmp_time[(lenseg-index1):]), np.zeros(lenseg-index1)) )
 	# plot
-	start = max( int(round(index1-before*plot_data.sample_rate)), 0)
-	end = min( int(round(index1+after*plot_data.sample_rate)), lenseg)
+	offset_ind = int(round(offset*plot_data.sample_rate))
+	start = max( int(round(index1-before*plot_data.sample_rate))-offset_ind, 0)
+	end = min( int(round(index1+after*plot_data.sample_rate))-offset_ind, lenseg)
 	plt.plot(plot_time[start:end], plot_tmp[start:end], color='tab:orange')
 	plt.plot(plot_time[start:end], plot_data[start:end], color='tab:blue')
 	plt.xlabel('time (s)')
 	plt.ylabel('amplitude (a.u.)')
-	plt.title('data and template in one plot; timeshift = '+str(round(times[count_of_max],3)))
+	plt.title(data.shortname+' and '+template.shortname+'; t = '+str(round(times[count_of_max],3))+' s, match = '+str(round(matches[count_of_max],2)))
 	plt.savefig(data.savepath+'plot_'+data.shortname+'_'+template.shortname+'.png')
 	if data.flag_show: plt.show()
 	plt.close() 
@@ -436,12 +437,25 @@ def matched_filter_templatebank(data, templatebank):
 	'Perform the matched filtering of the data with every template inside a templatebank.'
 	# prepare output
 	dtype = [('templatename', (np.str_,40)), ('maxmatch', np.float64), ('maxtime', np.float64), ('m1', np.float64), ('m2', np.float64)]
+	results = np.zeros((len(templatebank.list_of_templates),5))
+	names = []
 	writedata = np.array(np.arange(len(templatebank.list_of_templates)), dtype=dtype)
-	# calculate
+	sortdata = np.array(np.arange(len(templatebank.list_of_templates)), dtype=dtype)
+	# calculate output
 	for index,template in enumerate(templatebank.list_of_templates):
 		_,_,_,Maxmatch = matched_filter_single(data, template)
+		results[index] = index, Maxmatch[0], Maxmatch[1], template.m1, template.m2
+		names.append(template.shortname)
 		writedata[index] = template.shortname, Maxmatch[0], Maxmatch[1], template.m1, template.m2
-	# save statistics
+	# sorted output
+	results_sorted = results[results[:,1].argsort()[::-1]]
+	for index in range(len(templatebank.list_of_templates)):
+		sortdata[index] = names[int(results_sorted[index,0])], results_sorted[index,1], results_sorted[index,2], results_sorted[index,3], results_sorted[index,4]
+	# save results
 	header = 'Matched Filtering results of '+data.shortname+': \n'
 	header += 'templatename, match, time of match, template-m1, template-m2'
 	np.savetxt(data.savepath+'00_matched_filtering_results.dat', writedata, fmt=['%s', '%f', '%f', '%f', '%f'], header=header)
+	# save results sorted by match
+	header = 'Matched Filtering results of '+data.shortname+' (sorted by match): \n'
+	header += 'templatename, match, time of match, template-m1, template-m2'
+	np.savetxt(data.savepath+'00_matched_filtering_results_sorted.dat', sortdata, fmt=['%s', '%f', '%f', '%f', '%f'], header=header)
