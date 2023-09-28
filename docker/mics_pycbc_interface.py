@@ -3,7 +3,7 @@
 import matplotlib.pyplot as plt
 from pycbc.waveform import get_td_waveform
 from pycbc import types
-from pycbc.filter import matched_filter, match
+from pycbc.filter import matched_filter_core, sigmasq #, matched_filter, match
 import resampy     # https://resampy.readthedocs.io/en/stable/example.html
 import os
 import wave
@@ -168,7 +168,6 @@ def get_end_time(timeseries):
 
 
 
-
 ### Functions to load data and do the matched filtering
 #   ---------------------------------------------------
 
@@ -201,7 +200,7 @@ def make_template( m1, m2, samplerate=4096, duration=1.0, flag_show=False ):
 	# some hard-coded settings
 	apx = 'SEOBNRv4'   # by now I just randomly picked any
 	spin = 0.9
-	f_low = 30
+	f_low = 30         # I could use something above 50Hz to exclude line frequency transmitted by the amplifier.
 
 	# create and reshape time-domain template
 	hp, _ = get_td_waveform(approximant=apx,
@@ -296,7 +295,7 @@ def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_
 	for index,m1 in enumerate(masses[0]):
 		m2 = masses[1][index]
 		name = list_of_names[index]
-		# The pycbc-function in use raises a RuntimeError, if die Ringdown frequency is too high which occurs often with low masses.
+		# The pycbc-function in use raises a RuntimeError, if die Ringdown frequency is too high which occurs often with low masses (and the chosen approximant).
 		try:
 			strain_freq, strain_time = make_template(m1,m2)
 			if time_domain: strain_time.save_to_wav(savepath+name+'.wav')
@@ -321,54 +320,61 @@ def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_
 def matched_filter_single(data, template):  # psd, f_low, these arguments were cut out now
 	'Perform the matched filtering of data with a single template.'
 
-	tmp = template.frequency_series  # readability
+	plot_snr = False
 
-	debugmode = False
+	tmp = template.frequency_series 							# readability
+	offset = get_end_time(tmp.to_timeseries()).total_seconds() 	# offset of template end_time vs merger-time; in template t=0 is at merger.
 
-	# calc offset of template end_time vs merger-time
-	offset = get_end_time(tmp.to_timeseries()).total_seconds()
-
+	### initialize outputs
 	num = len(data.segments)
 	lenseg = len(data.segments[0])
 	deltat = data.segments[0].delta_t
 	matches = np.zeros(num)
 	indices = np.zeros(num)
 	times = np.zeros(num)
-
-	lensnr = int(0.5*(num+1)*lenseg)
-	snr_even = np.zeros(lensnr, dtype=np.complex128)
-	snr_odd = np.zeros(lensnr, dtype=np.complex128)
-	full_time = np.arange(lensnr)*deltat
-	
-	detail_snr = np.zeros(lenseg, dtype=np.complex128)
-	detail_time = np.zeros(lenseg)
-	detail_match = 0.
 	count_of_max = 0
+	detail_match = 0.
+	if plot_snr:
+		# snr over whole data length ('full')
+		lensnr = int(0.5*(num+1)*lenseg)
+		snr_even = np.zeros(lensnr, dtype=np.complex128)
+		snr_odd = np.zeros(lensnr, dtype=np.complex128)
+		full_time = np.arange(lensnr)*deltat
+		# snr around merger ('detail')
+		detail_snr = np.zeros(lenseg, dtype=np.complex128)
+		detail_time = np.zeros(lenseg)
 
+
+	### matched filtering for all segments
 	for count,segment in enumerate(data.segments):
-		snr = matched_filter(tmp, segment)#, psd=psd, low_frequency_cutoff=f_low)  # Signal-to-Noise Ratio. I am not yet sure, how to interpret that!
-		start = int(0.5*count*lenseg)
-		end = start+lenseg
-		if count % 2 == 0:
-			snr_even[start:end] = snr
-		else: snr_odd[start:end] = snr
 
-		### ------- isn't it a waste of computation, to calc both seperately: matched_filter (above) and match (below) ----- ###
+		snr,_,snr_norm = matched_filter_core(tmp, segment) #, psd=psd, low_frequency_cutoff=f_low)
+		# Following 4 lines: the pycbc matched_filter() and match() functions. Calling those two would calculate matched_filter_core() twice. 
+		mf_out = snr*snr_norm                              # mf_out = matched_filter(...)
+		v2_norm = sigmasq(segment)                         # match1,index1,phi1 = match(tmp, segment, return_phase=True)
+		maxsnr, index1 = mf_out.abs_max_loc()
+		match1 = maxsnr/np.sqrt(v2_norm)          # (maxsnr (mf_out) is already normed)
+		if plot_snr:
+			start = int(0.5*count*lenseg)
+			end = start+lenseg
+			if count % 2 == 0:
+				snr_even[start:end] = mf_out
+			else: snr_odd[start:end] = mf_out
 
-		match1,index1,phi1 = match(tmp, segment, return_phase=True)                # match1 seems to be the value that is to be looked for.
 		matches[count] = match1
 		indices[count] = index1
 		end_time = get_end_time(segment)
 		times[count] = end_time.total_seconds() - segment.duration + index1/segment.sample_rate - offset
 
 		if match1 > detail_match:
-			detail_snr = snr
-			detail_match = match1
-			detail_time = np.arange(lenseg)*deltat+full_time[start]
 			count_of_max = count
+			detail_match = match1
+			if plot_snr:
+				detail_snr = mf_out
+				detail_time = np.arange(lenseg)*deltat+full_time[start]
 
 		if False:
-			plt.plot(snr.sample_times, abs(snr))
+			plt.plot(mf_out.sample_times, abs(mf_out))
 			plt.ylabel('signal-to-noise ratio')
 			plt.xlabel('time (s)')
 			plt.title('snr of '+data.shortname+' with '+template.shortname+' - '+str(count).zfill(2))
@@ -377,26 +383,51 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 			else: plt.close()  
 			
 	# create and plot full snr
-	full_snr = np.maximum(snr_even, snr_odd)
-	plt.plot(full_time, abs(full_snr))
-	plt.ylabel('signal-to-noise ratio')
-	plt.xlabel('time (s)')
-	plt.title('snr of '+data.shortname+' with '+template.shortname+' - full')
-	plt.savefig(data.savepath+'SNR_'+data.shortname+'_'+template.shortname+'_full.png')
-	if data.flag_show: plt.show()
-	else: plt.close()
+	if plot_snr:
+		full_snr = np.maximum(snr_even, snr_odd)
+		plt.plot(full_time, abs(full_snr))
+		plt.ylabel('signal-to-noise ratio')
+		plt.xlabel('time (s)')
+		plt.title('snr of '+data.shortname+' with '+template.shortname+' - full')
+		plt.savefig(data.savepath+'SNR_'+data.shortname+'_'+template.shortname+'_full.png')
+		if data.flag_show: plt.show()
+		plt.close()
 
 	# plot detail snr
-	plt.plot(detail_time, abs(detail_snr))
-	plt.ylabel('signal-to-noise ratio')
-	plt.xlabel('time (s)')
-	plt.title('snr of '+data.shortname+' with '+template.shortname+' - '+str(count_of_max).zfill(2))
-	plt.savefig(data.savepath+'SNR_'+data.shortname+'_'+template.shortname+'_detail.png')
-	if data.flag_show: plt.show()
-	else: plt.close() 
+	if plot_snr:
+		plt.plot(detail_time, abs(detail_snr))
+		plt.ylabel('signal-to-noise ratio')
+		plt.xlabel('time (s)')
+		plt.title('snr of '+data.shortname+' with '+template.shortname+' - '+str(count_of_max).zfill(2))
+		plt.savefig(data.savepath+'SNR_'+data.shortname+'_'+template.shortname+'_detail.png')
+		if data.flag_show: plt.show()
+		plt.close() 
 
-	# get maximum values
+	### get maximum values over all segments
 	Maxmatch = [matches[count_of_max],times[count_of_max]]
+
+	### try to plot template and data together
+	# settings for plot
+	before = 0.1
+	after = 0.05
+	# create arrays for plot 
+	plot_data = data.segments[count_of_max]/np.sqrt(sigmasq(data.segments[count_of_max]))   # normed data segment.
+	plot_time = plot_data.sample_times
+	tmp_time = tmp.to_timeseries()
+	tmp_time = matches[count_of_max]/np.sqrt(sigmasq(tmp_time))*tmp_time
+	index1 = int(indices[count_of_max])
+	plot_tmp = np.concatenate( (np.asarray(tmp_time[(lenseg-index1):]), np.zeros(lenseg-index1)) )
+	# plot
+	start = max( int(round(index1-before*plot_data.sample_rate)), 0)
+	end = min( int(round(index1+after*plot_data.sample_rate)), lenseg)
+	plt.plot(plot_time[start:end], plot_tmp[start:end], color='tab:orange')
+	plt.plot(plot_time[start:end], plot_data[start:end], color='tab:blue')
+	plt.xlabel('time (s)')
+	plt.ylabel('amplitude (a.u.)')
+	plt.title('data and template in one plot; timeshift = '+str(round(times[count_of_max],3)))
+	plt.savefig(data.savepath+'plot_'+data.shortname+'_'+template.shortname+'.png')
+	if data.flag_show: plt.show()
+	plt.close() 
 
 	return matches, indices, times, Maxmatch
 
@@ -411,6 +442,6 @@ def matched_filter_templatebank(data, templatebank):
 		_,_,_,Maxmatch = matched_filter_single(data, template)
 		writedata[index] = template.shortname, Maxmatch[0], Maxmatch[1], template.m1, template.m2
 	# save statistics
-	header = 'Matched Filteting results of '+data.shortname+': \n'
+	header = 'Matched Filtering results of '+data.shortname+': \n'
 	header += 'templatename, match, time of match, template-m1, template-m2'
 	np.savetxt(data.savepath+'00_matched_filtering_results.dat', writedata, fmt=['%s', '%f', '%f', '%f', '%f'], header=header)

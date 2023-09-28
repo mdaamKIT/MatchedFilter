@@ -9,4 +9,5 @@ numpy
 wave
 resampy
 docker
+h5py
 ....?
