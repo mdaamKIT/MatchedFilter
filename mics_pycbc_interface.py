@@ -423,6 +423,7 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 	end = min( int(round(index1+after*plot_data.sample_rate))-offset_ind, lenseg)
 	plt.plot(plot_time[start:end], plot_data[start:end], color='tab:blue', linestyle='-', marker=',')
 	plt.plot(plot_time[start:end], plot_tmp[start:end], color='tab:orange', linestyle=':', marker=',', alpha=1.0) 
+	plt.legend(['data', 'template'])
 	plt.xlabel('time (s)')
 	plt.ylabel('amplitude (a.u.)')
 	plt.title(data.shortname+' and '+template.shortname+'; t = '+str(round(times[count_of_max],3))+' s, match = '+str(round(matches[count_of_max],2)))
