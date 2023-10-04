@@ -408,8 +408,8 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 
 	### try to plot template and data together
 	# settings for plot
-	before = 0.1
-	after = 0.05
+	before = 0.1   # start plot *before* merger (in s)
+	after = 0.05   # end        * after* merger (in s)
 	# create arrays for plot 
 	plot_data = data.segments[count_of_max]/np.sqrt(sigmasq(data.segments[count_of_max]))   # normed data segment.
 	plot_time = plot_data.sample_times
@@ -421,8 +421,8 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 	offset_ind = int(round(offset*plot_data.sample_rate))
 	start = max( int(round(index1-before*plot_data.sample_rate))-offset_ind, 0)
 	end = min( int(round(index1+after*plot_data.sample_rate))-offset_ind, lenseg)
-	plt.plot(plot_time[start:end], plot_tmp[start:end], color='tab:orange')
-	plt.plot(plot_time[start:end], plot_data[start:end], color='tab:blue')
+	plt.plot(plot_time[start:end], plot_data[start:end], color='tab:blue', linestyle='-', marker=',')
+	plt.plot(plot_time[start:end], plot_tmp[start:end], color='tab:orange', linestyle=':', marker=',', alpha=1.0) 
 	plt.xlabel('time (s)')
 	plt.ylabel('amplitude (a.u.)')
 	plt.title(data.shortname+' and '+template.shortname+'; t = '+str(round(times[count_of_max],3))+' s, match = '+str(round(matches[count_of_max],2)))
