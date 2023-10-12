@@ -440,7 +440,7 @@ class DataScreen(Screen):
 		# load results
 		results_filename = self.data.savepath+'00_matched_filtering_results.dat'
 		print(results_filename)
-		results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time', 'm1', 'm2'), 'formats': ('S5', 'f4', 'f4', 'f4', 'f4')})
+		results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time', 'm1', 'm2', 'M', 'r'), 'formats': ('S5', 'f4', 'f4', 'f4', 'f4', 'f4', 'f4')})
 		# shape arrays
 		L = len(results)
 		x = np.zeros(L)
