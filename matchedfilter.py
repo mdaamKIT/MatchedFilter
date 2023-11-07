@@ -127,7 +127,7 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 		self.close()
 
 	@pyqtSlot()
-	def to_setup_screen(self):
+	def to_setup_screen(self): # not necessary anymore
 		self.main = SetupScreen(self.config, self.templatebank, self.data, self.labels)
 		self.main.show()
 		self.close()
@@ -159,7 +159,7 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 	def openFileNamesDialog(self):
 		options = QFileDialog.Options()
 		options |= QFileDialog.DontUseNativeDialog
-		files, _ = QFileDialog.getOpenFileNames(self,"Open Template-File(s)", bankpath,"All Files (*);;Python Files (*.py)", options=options)
+		files, _ = QFileDialog.getOpenFileNames(self,"Open Template-File(s)", self.config.get('main', 'bankpath'),"All Files (*);;Python Files (*.py)", options=options)
 		if files:
 			return files
 
@@ -186,8 +186,6 @@ class TemplateScreen(Screen):
 		self.labels = labels
 		if self.labels: self.show_tmp_labels()
 
-		if self.config.getboolean('main', 'firststartup'): self.to_setup_screen()
-
 		# connect Push Buttons
 		self.pushButton_createTemplates.clicked.connect(self.to_create_screen)
 		self.pushButton_loadDirectory.clicked.connect(self.load_directory)
@@ -197,7 +195,7 @@ class TemplateScreen(Screen):
 	### methods connected with Push Buttons
 	@pyqtSlot()
 	def load_directory(self):
-		path = self.getDirectoryDialog("Choose the directory to be loaded.", bankpath)
+		path = self.getDirectoryDialog("Choose the directory to be loaded.", self.config.get('main', 'bankpath'))
 		self.templatebank.add_directory(path)
 		self.update_tmp_labels(path)
 		self.show_tmp_labels()
@@ -231,7 +229,7 @@ class SetupScreen(Screen):             # maybe this should be a QDialog instead 
 		self.config.set('main', 'debugmode', self.config.get('default', 'debugmode'))
 		self.config.set('main', 'bankpath', self.config.get('default', 'bankpath'))
 		### to be removed:
-		if self.config.get('main', 'debugmode'): self.config.set('main', 'bankpath', '/home/mic/promotion/f-prakt_material/LIGO/pycbc/MatchedFilter/tests/05_pre-final-tests/matchedfilter_testfiles/templates/')
+		if self.config.getboolean('main', 'debugmode'): self.config.set('main', 'bankpath', '/home/mic/promotion/f-prakt_material/LIGO/pycbc/MatchedFilter/tests/05_pre-final-tests/matchedfilter_testfiles/templates/')
 
 
 		# connect Push Buttons
@@ -275,7 +273,7 @@ class SetupScreen(Screen):             # maybe this should be a QDialog instead 
 
 	@pyqtSlot()
 	def choose_dir(self):
-		path = self.getDirectoryDialog("Choose a directory for the template bank.", config.get('default', 'bankpath'))
+		path = self.getDirectoryDialog("Choose a directory for the template bank.", self.config.get('default', 'bankpath'))
 		self.config.set('main', 'bankpath', path)
 		return
 
@@ -302,7 +300,7 @@ class CreateScreen(Screen):
 		self.labels = labels
 		self.flag_Mr = True
 		self.flag_All = True
-		self.path = bankpath
+		self.path = self.config.get('main', 'bankpath')
 		self.label_path.setText(self.path)
 		# connect pushButtons
 		self.pushButton_changeOutput.clicked.connect(self.change_output)
@@ -340,24 +338,20 @@ class CreateScreen(Screen):
 			self.label_Parameter2.setText('mass ratio (r)')
 			self.label_FilenameExt.setText("+'Mr_[M]-[r]'")
 			self.show()
-			if debugmode: print('Mr')
 		else:
 			self.flag_Mr = False
 			self.label_Parameter1.setText('mass 1 (m1)')
 			self.label_Parameter2.setText('mass 2 (m2)')
 			self.label_FilenameExt.setText("+'mm_[m1]-[m2]'")
 			self.show()
-			if debugmode: print('m1m2')
 
 	@pyqtSlot()
 	def change_All(self):
 		'Change the Layout and flag_All, if one of the All radioButtons is clicked.'
 		if self.ButtonGroup_All.checkedId() == 3:
 			self.flag_All = True
-			if debugmode: print('AllOn')
 		else:
 			self.flag_All = False
-			if debugmode: print('AllOf')
 
 	def get_array(self):
 		'Convert input from the lineEdit fields into the appropriate 2d numpy array.'
@@ -552,7 +546,7 @@ connection = handler.connect()
 templatebank = handler.TemplateBank()
 
 ### !!!!!!!!!!!!! could be removed in the end:     ## and it does not exactly work as intended now, as the main section does get altered after this call
-if config.get('main', 'debugmode'): 
+if config.getboolean('main', 'debugmode'): 
 	connection.update_mpi(mpi_path_host, mpi_path_container)
 
 # open Window
@@ -564,5 +558,6 @@ with open('matchedfilter.qss','r') as qss:
 app = QApplication(sys.argv)
 app.setStyleSheet(style)
 win = TemplateScreen(config, templatebank)
+if config.getboolean('main', 'firststartup'): win = SetupScreen(config, templatebank)
 win.show()
 sys.exit(app.exec_())
