@@ -178,8 +178,8 @@ class TemplateScreen(Screen):
 
 	def __init__(self, config, connection, templatebank, data=None, labels=None):
 		# general settings and initiation of ui
-		super().__init__(templatebank, labels)
-		loadUi(cwd+'/template_screen.ui',self)
+		super().__init__(config, connection, templatebank, labels)
+		loadUi(os.getcwd()+'/template_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Template Management)')
 		self.config = config
 		if connection:
@@ -225,8 +225,8 @@ class TemplateScreen(Screen):
 class SetupScreen(Screen):             # maybe this should be a QDialog instead of a Screen but it is like this now.
 
 	def __init__(self, config, connection, templatebank, data=None, labels=None):
-		super().__init__(templatebank, labels)
-		loadUi(cwd+'/setup_screen.ui', self)
+		super().__init__(config, connection, templatebank, labels)
+		loadUi(os.getcwd()+'/setup_screen.ui', self)
 		self.setWindowTitle('Matched Filtering with pycbc (Setup on first startup)')
 		self.config = config
 		self.connection = connection
@@ -301,8 +301,8 @@ class CreateScreen(Screen):
 
 	def __init__(self, config, connection, templatebank, data=None, labels=None):
 		# general settings and initiation of ui
-		super().__init__(templatebank, labels)
-		loadUi(cwd+'/create_screen.ui',self)
+		super().__init__(config, connection, templatebank, labels)
+		loadUi(os.getcwd()+'/create_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Template Creation)')
 		self.config = config
 		self.connection = connection
@@ -440,8 +440,8 @@ class DataScreen(Screen):
 
 	def __init__(self, config, connection, templatebank, data=None, labels=None):
 		# general settings and initiation of ui
-		super().__init__(templatebank, labels)
-		loadUi(cwd+'/data_screen.ui',self)
+		super().__init__(config, connection, templatebank, labels)
+		loadUi(os.getcwd()+'/data_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Matched Filtering)')
 		self.config
 		self.connection = connection
@@ -558,7 +558,7 @@ with open('matchedfilter.qss','r') as qss:
 
 app = QApplication(sys.argv)
 app.setStyleSheet(style)
-win = TemplateScreen(config, None, templatebank)
-if config.getboolean('main', 'firststartup'): win = SetupScreen(config, None, templatebank)
+win = TemplateScreen(config, None, None)
+if config.getboolean('main', 'firststartup'): win = SetupScreen(config, None, None)
 win.show()
 sys.exit(app.exec_())
