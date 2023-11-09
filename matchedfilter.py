@@ -62,14 +62,15 @@ class MatchedFilteringWorker(QObject):
 	finished = pyqtSignal()
 	progress = pyqtSignal(int)
 
-	def __init__(self, data, templatebank, connection):
+	def __init__(self, data, templatebank, OS, debugmode):
 		super().__init__()
 		self.data = data
 		self.templatebank = templatebank
-		self.connection = connection
+		self.OS = OS
+		self.debugmode = debugmode
 
 	def matched_filter(self):
-		self.data.matched_filter_templatebank(self.templatebank, self.connection)
+		self.data.matched_filter(self.templatebank, self.OS, self.debugmode)
 		self.finished.emit()
 
 	# Look at the Worker above for how feedback could be sent back.
@@ -80,11 +81,10 @@ class MatchedFilteringWorker(QObject):
 class Screen(QMainWindow):   # Superclass where the different Screens following inherit common methods from.
 
 	### initiation
-	def __init__(self, config, connection, templatebank, data=None, labels=None):
+	def __init__(self, config, templatebank, data=None, labels=None):
 		super().__init__()
 		# set status
 		self.config = config
-		self.connection = connection
 		self.templatebank = templatebank
 		self.data = data
 		self.labels = labels
@@ -120,27 +120,27 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 	### changing screens
 	@pyqtSlot()
 	def to_template_screen(self):
-		self.main = TemplateScreen(self.config, self.connection, self.templatebank, self.data, self.labels)
+		self.main = TemplateScreen(self.config, self.templatebank, self.data, self.labels)
 		self.main.show()
 		self.close()
 
 	@pyqtSlot()
 	def to_setup_screen(self): # not necessary anymore
-		self.main = SetupScreen(self.config, self.connection, self.templatebank, self.data, self.labels)
+		self.main = SetupScreen(self.config, self.templatebank, self.data, self.labels)
 		self.main.show()
 		self.close()
 
 	@pyqtSlot()
 	def to_data_screen(self):
 		labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
-		self.main = DataScreen(self.config, self.connection, self.templatebank, self.data, labels)
+		self.main = DataScreen(self.config, self.templatebank, self.data, labels)
 		self.main.show()
 		self.close()
 
 	@pyqtSlot()
 	def to_create_screen(self):
 		labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
-		self.main = CreateScreen(self.config, self.connection, self.templatebank, self.data, labels)
+		self.main = CreateScreen(self.config, self.templatebank, self.data, labels)
 		self.main.show()
 		self.close()
 
@@ -173,17 +173,12 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 
 class TemplateScreen(Screen):
 
-	def __init__(self, config, connection, templatebank, data=None, labels=None):
+	def __init__(self, config, templatebank, data=None, labels=None):
 		# general settings and initiation of ui
-		super().__init__(config, connection, templatebank, labels)
+		super().__init__(config, templatebank, labels)
 		loadUi(os.getcwd()+'/template_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Template Management)')
 		self.config = config
-		if connection:
-			self.connection = connection
-		else:
-			self.connection = handler.connect()
-			if self.config.getboolean('main', 'debugmode'):	self.connection.update_mpi(os.getcwd(), '/input/mpi/')
 		if templatebank:
 			self.templatebank = templatebank
 		else:
@@ -221,12 +216,11 @@ class TemplateScreen(Screen):
 
 class SetupScreen(Screen):             # maybe this should be a QDialog instead of a Screen but it is like this now.
 
-	def __init__(self, config, connection, templatebank, data=None, labels=None):
-		super().__init__(config, connection, templatebank, labels)
+	def __init__(self, config, templatebank, data=None, labels=None):
+		super().__init__(config, templatebank, labels)
 		loadUi(os.getcwd()+'/setup_screen.ui', self)
 		self.setWindowTitle('Matched Filtering with pycbc (Setup on first startup)')
 		self.config = config
-		self.connection = connection
 		self.templatebank = templatebank
 		self.data = data
 		self.labels = labels
@@ -296,13 +290,12 @@ class SetupScreen(Screen):             # maybe this should be a QDialog instead 
 
 class CreateScreen(Screen):
 
-	def __init__(self, config, connection, templatebank, data=None, labels=None):
+	def __init__(self, config, templatebank, data=None, labels=None):
 		# general settings and initiation of ui
-		super().__init__(config, connection, templatebank, labels)
+		super().__init__(config, templatebank, labels)
 		loadUi(os.getcwd()+'/create_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Template Creation)')
 		self.config = config
-		self.connection = connection
 		self.templatebank = templatebank
 		self.data = data
 		self.labels = labels
@@ -435,13 +428,12 @@ class CreateScreen(Screen):
 
 class DataScreen(Screen):
 
-	def __init__(self, config, connection, templatebank, data=None, labels=None):
+	def __init__(self, config, templatebank, data=None, labels=None):
 		# general settings and initiation of ui
-		super().__init__(config, connection, templatebank, labels)
+		super().__init__(config, templatebank, labels)
 		loadUi(os.getcwd()+'/data_screen.ui',self)
 		self.setWindowTitle('Matched Filtering with pycbc (Matched Filtering)')
 		self.config
-		self.connection = connection
 		self.templatebank = templatebank
 		self.data = data
 		self.labels = labels
@@ -483,7 +475,7 @@ class DataScreen(Screen):
 		# create QThread object
 		self.thread = QThread()
 		# create Worker object and move it to thread
-		self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.connection)
+		self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.config.get('main', 'os'), self.config.getboolean('main', 'debugmode'))
 		self.worker.moveToThread(self.thread)
 		# connect signals and slots
 		self.thread.started.connect(self.worker.matched_filter)

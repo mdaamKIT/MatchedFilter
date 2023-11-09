@@ -3,18 +3,18 @@
 import os
 import glob
 import numpy as np
-from configparser import ConfigParser
+# from configparser import ConfigParser
 
 ### Get OS from config.ini and establish a connection object to communicate to mpi
 
-config = ConfigParser()
-config.read('config.ini')
-OS = config.get('main', 'OS')
+# config = ConfigParser()
+# config.read('config.ini')
+# OS = config.get('main', 'OS')
 
-if OS == 'windows':
-	import communicate_to_mpi_windows as ctm
-else:
-	import communicate_to_mpi_linux as ctm
+### maybe it is better to import both and decide upon establishing a connection, from which a connection should be established?
+
+import communicate_to_mpi_windows as ctm
+## import communicate_to_mpi_linux as ctm  # maybe I can really directly import mpi? I guess, I need to create another file, communicating
 
 ### !!!! maybe I could import communicate_to_mpi_windows as mpi for windows and mpi as mpi for linux?
 #         Maybe this is a bad idea, as I need the connection-object stable? Can it just be created (and destroyed) by calling a mpi-function
@@ -71,10 +71,10 @@ class TemplateBank:
 
 	def create_templates(self, array_masses, bankpath, basename, flag_Mr=False, freq_domain=True, time_domain=False):
 		'Creates templates and adds them to the templatebank.'
-		local_connection = ctm.MPIConnection()    # We establish a parallel connection, to create templates independently and in between other commands on connection.
-		local_connection.update_mpi(os.getcwd(), '/input/mpi/')   # remove or only execute in debugmode?
+		connection = ctm.MPIConnection()    # We establish a parallel connection, to create templates independently and in between other commands on connection.
+		connection.update_mpi(os.getcwd(), '/input/mpi/')   # remove or only execute in debugmode?
 		list_old_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf')]
-		local_connection.Create_Templates(array_masses, bankpath, basename, flag_Mr, freq_domain, time_domain)
+		connection.Create_Templates(array_masses, bankpath, basename, flag_Mr, freq_domain, time_domain)
 		list_new_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf') and f not in list_old_templates]
 		for filename in list_new_templates: self.add_template(bankpath, filename)
 
@@ -108,17 +108,16 @@ class Data:
 		self.segment_duration = 1
 		# self.ending = '.wav'
 
-	def matched_filter_single(self, template, connection):   # it feels a little ugly, to use a connection that is not really defined inside here. (It has to be a ctm.MPIConnection object and gets called from matchedfilter.py via the connect-method at the bottom of this file.)
-		'Tries to find a single template in the data.'
-		if not isinstance(template, Template):
-			raise TypeError('template has to be an instance of Template class but has type: ' + str(type(template)))
-		connection.Matched_Filter(self, template)
-
-	def matched_filter_templatebank(self, templatebank, connection):
+	def matched_filter(self, templatebank, OS, debugmode=False):
 		'Performs Matched Filtering with every template in the templatebank.'
 		if not isinstance(templatebank, TemplateBank):
 			raise TypeError('templatebank has to be an instance of TemplateBank class but has type: ' + str(type(templatebank)))
-		connection.Matched_Filter_templatebank(self, templatebank)
+		if OS == 'windows':
+			connection = ctm.MPIConnection()
+			if debugmode: connection.update_mpi(os.getcwd(), '/input/mpi/')
+			connection.Matched_Filter_templatebank(self, templatebank)
+		else:
+			print('Error, linux style without docker not yet supported. Change os in main in config.ini to windows.')
 
 	### !!!!! I guess, the following ones are not needed and could be deleted.
 
@@ -168,6 +167,6 @@ def mkdir( dirname, relative=True ):
 
 	return
 
-def connect():
-	connection = ctm.MPIConnection()
-	return connection
+# def connect():
+# 	connection = ctm.MPIConnection()
+# 	return connection
