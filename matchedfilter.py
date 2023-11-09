@@ -44,11 +44,8 @@ class CreateTemplatesWorker(QObject):
 		################   !!!!!!!!!!!!!!!!!!     I should call an Error here. (following line)
 		if not os.path.isdir(self.path): print('Output path does not exist.')
 		self.progress.emit(0)
-		templatebank.create_templates(self.array, self.path, self.basename, self.flag_Mr, self.freq_domain, self.time_domain)
+		self.templatebank.create_templates(self.array, self.path, self.basename, self.flag_Mr, self.freq_domain, self.time_domain)
 		self.progress.emit(1)
-		# add the new templates to the templatebank
-		self.templatebank.add_directory(self.path)
-		self.progress.emit(2)
 		self.finished.emit()
 
 		### lets not implement this not, but later                 ######################################
@@ -72,7 +69,7 @@ class MatchedFilteringWorker(QObject):
 		self.connection = connection
 
 	def matched_filter(self):
-		self.data.matched_filter_templatebank(self.templatebank, connection)
+		self.data.matched_filter_templatebank(self.templatebank, self.connection)
 		self.finished.emit()
 
 	# Look at the Worker above for how feedback could be sent back.
@@ -190,7 +187,7 @@ class TemplateScreen(Screen):
 		if templatebank:
 			self.templatebank = templatebank
 		else:
-			templatebank = handler.TemplateBank()			
+			self.templatebank = handler.TemplateBank()			
 		self.data = data
 		self.labels = labels
 		if self.labels: self.show_tmp_labels()
@@ -486,7 +483,7 @@ class DataScreen(Screen):
 		# create QThread object
 		self.thread = QThread()
 		# create Worker object and move it to thread
-		self.worker = MatchedFilteringWorker(self.data, self.templatebank, connection)
+		self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.connection)
 		self.worker.moveToThread(self.thread)
 		# connect signals and slots
 		self.thread.started.connect(self.worker.matched_filter)
@@ -545,13 +542,11 @@ class DataScreen(Screen):
 		plt.show()
 
 
-# General settings
+# open Window
+# -----------
 
 config = ConfigParser()
 config.read('config.ini')
-
-# open Window
-# -----------
 
 with open('matchedfilter.qss','r') as qss:
 	style = qss.read()

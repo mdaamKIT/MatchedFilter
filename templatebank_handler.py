@@ -72,9 +72,11 @@ class TemplateBank:
 	def create_templates(self, array_masses, bankpath, basename, flag_Mr=False, freq_domain=True, time_domain=False):
 		'Creates templates and adds them to the templatebank.'
 		local_connection = ctm.MPIConnection()    # We establish a parallel connection, to create templates independently and in between other commands on connection.
-		local_connection.update_mpi(os.getcwd(), '/input/mpi/')
+		local_connection.update_mpi(os.getcwd(), '/input/mpi/')   # remove or only execute in debugmode?
+		list_old_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf')]
 		local_connection.Create_Templates(array_masses, bankpath, basename, flag_Mr, freq_domain, time_domain)
-		# now I still have to add those to the templatebank
+		list_new_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf') and f not in list_old_templates]
+		for filename in list_new_templates: self.add_template(bankpath, filename)
 
 ######### I have to delete this, but first see, where it gets called
 	def create_templates_Mr(self, array_Mr, bankpath, basename, freq_domain=True, time_domain=False):
