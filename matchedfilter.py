@@ -2,8 +2,8 @@
 
 # This is the main-File.
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QObject, QThread
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QButtonGroup
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QObject, QThread, Qt, QTimer
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QButtonGroup, QMessageBox, QProgressDialog, QProgressBar
 from PyQt5.uic import loadUi
 import threading
 
@@ -25,9 +25,7 @@ import matplotlib.pyplot as plt
 
 ### worker objects for threading
 
-class CreateTemplatesWorker(QObject):
-	finished = pyqtSignal()
-	progress = pyqtSignal(int)
+class CreateTemplatesWorker(QThread):
 
 	def __init__(self, templatebank, array, path, basename, flag_Mr, freq_domain, time_domain):
 		super().__init__()
@@ -39,28 +37,15 @@ class CreateTemplatesWorker(QObject):
 		self.freq_domain = freq_domain
 		self.time_domain = time_domain
 
-	def create_templates(self):
+	def run(self):
 		'Create templates from the user-input.'
-		################   !!!!!!!!!!!!!!!!!!     I should call an Error here. (following line)
-		if not os.path.isdir(self.path): print('Output path does not exist.')
-		self.progress.emit(0)
-		self.templatebank.create_templates(self.array, self.path, self.basename, self.flag_Mr, self.freq_domain, self.time_domain)
-		self.progress.emit(1)
-		self.finished.emit()
+		if not os.path.isdir(self.path): 
+			errorstring = 'Output path not found.\n'
+			raise NotADirectoryError(errorstring)
+		else:
+			self.templatebank.create_templates(self.array, self.path, self.basename, self.flag_Mr, self.freq_domain, self.time_domain)
 
-		### lets not implement this not, but later                 ######################################
-		# label = self.make_label(self.path, 48, 8)
-		# if not self.labels[2]=='None':
-		# 	self.labels[3] = 'and more'
-		# self.labels[2] = self.labels[1]
-		# self.labels[1] = self.labels[0]
-		# self.labels[0] = label
-		# self.show()
-
-
-class MatchedFilteringWorker(QObject):
-	finished = pyqtSignal()
-	progress = pyqtSignal(int)
+class MatchedFilteringWorker(QThread):
 
 	def __init__(self, data, templatebank, OS, debugmode):
 		super().__init__()
@@ -69,11 +54,8 @@ class MatchedFilteringWorker(QObject):
 		self.OS = OS
 		self.debugmode = debugmode
 
-	def matched_filter(self):
+	def run(self):
 		self.data.matched_filter(self.templatebank, self.OS, self.debugmode)
-		self.finished.emit()
-
-	# Look at the Worker above for how feedback could be sent back.
 
 
 ### Screen objects
@@ -88,6 +70,9 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 		self.templatebank = templatebank
 		self.data = data
 		self.labels = labels
+		# settings for label length
+		self.label_maxlen = 48
+		self.label_indent = 8
 	
 
 	### label handling
@@ -100,10 +85,10 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 		return label
 
 	def update_tmp_labels(self, new_label_raw):
-		new_label = self.make_label(new_label_raw, 48, 8)
+		new_label = self.make_label(new_label_raw, self.label_maxlen, self.label_indent)
 		if not self.labels:
 			self.labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
-		if not self.labels[2]=='None':
+		if not self.labels[2]=='        None':
 			self.labels[3]='and more'
 		self.labels[2] = self.labels[1]
 		self.labels[1] = self.labels[0]
@@ -132,10 +117,21 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 
 	@pyqtSlot()
 	def to_data_screen(self):
-		labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
-		self.main = DataScreen(self.config, self.templatebank, self.data, labels)
-		self.main.show()
-		self.close()
+		stay = False
+		if len(self.templatebank.list_of_templates)==0:
+			answer = QMessageBox.question(
+				self,
+				"No templates have been loaded", 
+				'It seems, you did not load any templates in the Template Management.\n\nDo you want to continue anyway?',
+				QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+				)
+			if answer==QMessageBox.StandardButton.No:
+				stay = True
+		if not stay:
+			labels = [ self.label_TempLine1.text(), self.label_TempLine2.text(), self.label_TempLine3.text(), self.label_TempLine4.text() ]
+			self.main = DataScreen(self.config, self.templatebank, self.data, labels)
+			self.main.show()
+			self.close()
 
 	@pyqtSlot()
 	def to_create_screen(self):
@@ -151,23 +147,30 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 		options = QFileDialog.Options()
 		options |= QFileDialog.DontUseNativeDialog
 		fileName, _ = QFileDialog.getOpenFileName(self, DialogName, defaultpath ,"All Files (*);;Python Files (*.py)", options=options)
-		if fileName:
+		if not fileName:
+			print('No file selected.')
+		else:
 			return fileName
 
+#### Do I really still need this? Could we just use the above one?
 	def openFileNamesDialog(self):
 		options = QFileDialog.Options()
 		options |= QFileDialog.DontUseNativeDialog
 		files, _ = QFileDialog.getOpenFileNames(self,"Open Template-File(s)", self.config.get('main', 'bankpath'),"All Files (*);;Python Files (*.py)", options=options)
-		if files:
+		if not files:
+			print('No files selected.')
+		else:
 			return files
 
 	def getDirectoryDialog(self, DialogName, defaultpath):
 		options = QFileDialog.Options()
 		options |= QFileDialog.DontUseNativeDialog
 		options |= QFileDialog.ShowDirsOnly
-		dirName = QFileDialog.getExistingDirectory(self, DialogName, defaultpath, options=options)+'/'
-		if dirName:
-			return dirName
+		dirName = QFileDialog.getExistingDirectory(self, DialogName, defaultpath, options=options)
+		if not dirName:
+			print('No directory selected.')
+		else:
+			return dirName+'/'
 
 
 
@@ -197,19 +200,21 @@ class TemplateScreen(Screen):
 	@pyqtSlot()
 	def load_directory(self):
 		path = self.getDirectoryDialog("Choose the directory to be loaded.", self.config.get('main', 'bankpath'))
-		self.templatebank.add_directory(path)
-		self.update_tmp_labels(path)
-		self.show_tmp_labels()
+		if path:
+			self.templatebank.add_directory(path)
+			self.update_tmp_labels(path)
+			self.show_tmp_labels()
 		return
 
 	@pyqtSlot()
 	def load_file(self):
 		fullname = self.openFileNamesDialog()[0]
-		path = os.path.dirname(fullname)+'/'
-		filename = os.path.basename(fullname)
-		self.templatebank.add_template(path, filename)
-		self.update_tmp_labels(fullname)
-		self.show_tmp_labels()
+		if fullname:
+			path = os.path.dirname(fullname)+'/'
+			filename = os.path.basename(fullname)
+			self.templatebank.add_template(path, filename)
+			self.update_tmp_labels(fullname)
+			self.show_tmp_labels()
 		return
 
 
@@ -275,7 +280,8 @@ class SetupScreen(Screen):             # maybe this should be a QDialog instead 
 	@pyqtSlot()
 	def choose_dir(self):
 		path = self.getDirectoryDialog("Choose a directory for the template bank.", self.config.get('default', 'bankpath'))
-		self.config.set('main', 'bankpath', path)
+		if path:
+			self.config.set('main', 'bankpath', path)
 		return
 
 	@pyqtSlot()
@@ -327,8 +333,9 @@ class CreateScreen(Screen):
 	@pyqtSlot()
 	def change_output(self):
 		self.path = self.getDirectoryDialog('Choose the new output directory.', self.path)
-		self.label_path.setText(self.make_label(self.path,120,0))
-		self.show()
+		if self.path:
+			self.label_path.setText(self.make_label(self.path,120,0))
+			self.show()
 
 	@pyqtSlot()
 	def change_Parameter(self):
@@ -391,38 +398,54 @@ class CreateScreen(Screen):
 		return array
 
 	def create_templates(self):
-		# We are following the example in the section "Using QThread to Prevent Freezing GUIs" from this website:
-		# https://realpython.com/python-pyqt-qthread/
-		
-		# create QThread object
-		self.thread = QThread()
+		# for questions how this works, look at the matched_filtering method of the DataScreen
+
 		# gather input for Worker
 		array = self.get_array()
 		basename = self.lineEdit_FilenameBase.text() 
 		freq_domain = self.checkBox_freq.isChecked()
 		time_domain = self.checkBox_time.isChecked()
-		# create Worker object and move it to thread
+
+		# set up the progress_dialog
+		self.progress_dialog = QProgressDialog("Preparing Template creation,\n please wait...", "Cancel", 0, len(array[0])+1, self)
+		self.progress_bar = QProgressBar(self.progress_dialog)
+		self.progress_bar.setMaximum(len(array[0])+1)
+		self.progress_dialog.setBar(self.progress_bar)
+		self.progress_dialog.setWindowTitle("Create Templates")
+		self.progress_dialog.setWindowModality(Qt.WindowModal)
+		self.progress_dialog.canceled.connect(self.create_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
+
+		# create worker Thread
 		self.worker = CreateTemplatesWorker(self.templatebank, array, self.path, basename, self.flag_Mr, freq_domain, time_domain)
-		self.worker.moveToThread(self.thread)
-		# connect signals and slots
-		self.thread.started.connect(self.worker.create_templates)
-		self.worker.finished.connect(self.thread.quit)
-		self.worker.finished.connect(self.worker.deleteLater)
-		self.thread.finished.connect(self.thread.deleteLater)
-		# self.worker.progress.connect(self.reportProgress)   # has to be adjusted to my program
-		# start the thread
-		self.thread.start()
+		self.worker.finished.connect(self.progress_dialog.close)
+		self.worker.start()
 
-		# Final resets  ## these have to be adjusted to my program
-		# self.longRunningBtn.setEnabled(False)
-		# self.thread.finished.connect(
-		# 	lambda: self.longRunningBtn.setEnabled(True)
-		# )
-		# self.thread.finished.connect(
-		# 	lambda: self.stepLabel.setText("Long-Running Step: 0")
-		# )
+		# setup timer to update the progress_dialog		
+		self.timer = QTimer()
+		self.timer.timeout.connect(self.create_update_progress)
+		self.timer.start(1000)  # in ms - 1000 means the progress_bar gets updated once every second
 
-		self.update_tmp_labels(self.path)
+	def create_update_progress(self):
+		counter = 0
+		if os.path.isfile(self.path+'00_progress_create.dat'):
+			track_progress = np.loadtxt(self.path+'00_progress_create.dat', dtype=int)
+			self.progress_dialog.setLabelText("Creating Templates...")
+			self.progress_bar.setMaximum(track_progress[1])
+			self.progress_dialog.setValue(track_progress[0])
+		else:
+			counter+=1
+			if counter > 59:
+				print('Template Creation took too long to prepare, abort.')
+				return
+
+	def create_stop(self, event=None):
+		self.timer.stop()
+		self.worker.requestInterruption()
+		self.worker.quit()
+		self.worker.wait()
+		self.worker.deleteLater()
+		if os.path.isfile(self.path+'00_progress_create.dat'):
+			os.remove(self.path+'00_progress_create.dat')
 
 	
 
@@ -451,49 +474,71 @@ class DataScreen(Screen):
 	@pyqtSlot()
 	def load_data(self):
 		fullname = self.openFileNameDialog("Open Data-File", "C:/Users/Praktikum/Desktop/LIGO")
-		path = os.path.dirname(fullname)+'/'
-		filename = os.path.basename(fullname)
-		self.data = handler.Data(path, filename)
-		self.label_Data.setText( self.make_label(fullname, 35, 2) )
-		self.label_Output.setText( self.make_label(self.data.savepath,35,2) )
-		self.show()
+		if fullname:
+			path = os.path.dirname(fullname)+'/'
+			filename = os.path.basename(fullname)
+			self.data = handler.Data(path, filename)
+			self.label_Data.setText( self.make_label(fullname, 35, 2) )
+			self.label_Output.setText( self.make_label(self.data.savepath,35,2) )
+			self.show()
 		return
 
 	@pyqtSlot()
 	def change_output(self):
 		newpath = self.getDirectoryDialog('Choose the new output directory.', self.data.datapath)
-		self.data.set_savepath(newpath)
-		self.label_Output.setText( self.make_label(self.data.savepath,35,2) )
-		self.show()
+		if newpath:
+			self.data.set_savepath(newpath)
+			self.label_Output.setText( self.make_label(self.data.savepath,35,2) )
+			self.show()
 		return
 
 	@pyqtSlot()
 	def matched_filter(self):
-		# We are following the example in the section "Using QThread to Prevent Freezing GUIs" from this website:
-		# https://realpython.com/python-pyqt-qthread/
-		
-		# create QThread object
-		self.thread = QThread()
-		# create Worker object and move it to thread
-		self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.config.get('main', 'os'), self.config.getboolean('main', 'debugmode'))
-		self.worker.moveToThread(self.thread)
-		# connect signals and slots
-		self.thread.started.connect(self.worker.matched_filter)
-		self.worker.finished.connect(self.thread.quit)
-		self.worker.finished.connect(self.worker.deleteLater)
-		self.thread.finished.connect(self.thread.deleteLater)
-		# self.worker.progress.connect(self.reportProgress)   # has to be adjusted to my program
-		# start the thread
-		self.thread.start()
+		# Input for this method is from those sources:
+		# https://doc.qt.io/qtforpython-6/PySide6/QtCore/QThread.html#PySide6.QtCore.PySide6.QtCore.QThread.quit
+		# https://www.programcreek.com/python/example/108099/PyQt5.QtWidgets.QProgressDialog
 
-		# Final resets  ## these have to be adjusted to my program
-		# self.longRunningBtn.setEnabled(False)
-		# self.thread.finished.connect(
-		# 	lambda: self.longRunningBtn.setEnabled(True)
-		# )
-		# self.thread.finished.connect(
-		# 	lambda: self.stepLabel.setText("Long-Running Step: 0")
-		# )
+		# set up the progress_dialog
+		self.progress_dialog = QProgressDialog("Preparing Matched Filtering,\n please wait...", "Cancel", 0, len(self.templatebank.list_of_templates)+2, self)
+		self.progress_bar = QProgressBar(self.progress_dialog)
+		self.progress_bar.setMaximum(len(self.templatebank.list_of_templates)+2)
+		self.progress_dialog.setBar(self.progress_bar)
+		self.progress_dialog.setWindowTitle("Matched Filtering")
+		self.progress_dialog.setWindowModality(Qt.WindowModal)
+		self.progress_dialog.canceled.connect(self.mf_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
+
+		# create worker Thread
+		self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.config.get('main', 'os'), self.config.getboolean('main', 'debugmode'))
+		self.worker.finished.connect(self.progress_dialog.close)
+		self.worker.start()
+
+		# setup timer to update the progress_dialog		
+		self.timer = QTimer()
+		self.timer.timeout.connect(self.mf_update_progress)
+		self.timer.start(1000)  # in ms - 1000 means the progress_bar gets updated once every second
+
+	def mf_update_progress(self):
+		counter = 0
+		if os.path.isfile(self.data.savepath+'00_progress_mf.dat'):
+			track_progress = np.loadtxt(self.data.savepath+'00_progress_mf.dat', dtype=int)
+			self.progress_dialog.setLabelText("Matched Filtering in progress...")
+			self.progress_bar.setMaximum(track_progress[1])
+			self.progress_dialog.setValue(track_progress[0])
+		else:
+			counter+=1
+			if counter > 59:
+				print('Matched Filtering took too long to prepare, abort.')
+				return
+
+	def mf_stop(self, event=None):
+		self.timer.stop()
+		self.worker.requestInterruption()
+		self.worker.quit()
+		self.worker.wait()
+		self.worker.deleteLater()
+		if os.path.isfile(self.data.savepath+'00_progress_mf.dat'):
+			os.remove(self.data.savepath+'00_progress_mf.dat')
+
 
 	@pyqtSlot()
 	def plot_results_Mr(self):
@@ -501,37 +546,56 @@ class DataScreen(Screen):
 
 	@pyqtSlot()
 	def plot_results(self, flag_Mr=False):
+
+		if not isinstance(self.data, handler.Data):
+			msg = QMessageBox()
+			msg.setIcon(QMessageBox.Warning)
+			msg.setText("Error: no data object")
+			msg.setInformativeText('You need to load Data and execute Matched Filtering before trying to plot results.')
+			msg.setWindowTitle("Error")
+			msg.exec_()
+
 		# load results
 		results_filename = self.data.savepath+'00_matched_filtering_results.dat'
-		print(results_filename)
-		results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time', 'm1', 'm2', 'M', 'r'), 'formats': ('S5', 'f4', 'f4', 'f4', 'f4', 'f4', 'f4')})
-		# shape arrays
-		L = len(results)
-		x = np.zeros(L)
-		y = np.zeros(L)
-		z = np.zeros(L)
-		for index in range(L):
-			x[index] = int(results[index][3])  # m1
-			y[index] = int(results[index][4])  # m2
-			z[index] = results[index][1]       # match
-		# plot
-		if flag_Mr:
-			M = x+y
-			r = x/y
-			fig = plt.figure()
-			ax = fig.add_subplot(projection='3d')
-			ax.scatter(M,r,z)
-			ax.set_xlabel('total mass')
-			ax.set_ylabel('mass ratio')
-			ax.set_zlabel('match')
+
+		if os.path.isfile(results_filename):
+
+			results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time', 'm1', 'm2', 'M', 'r'), 'formats': ('S5', 'f4', 'f4', 'f4', 'f4', 'f4', 'f4')})
+			# shape arrays
+			L = len(results)
+			x = np.zeros(L)
+			y = np.zeros(L)
+			z = np.zeros(L)
+			for index in range(L):
+				x[index] = int(results[index][3])  # m1
+				y[index] = int(results[index][4])  # m2
+				z[index] = results[index][1]       # match
+			# plot
+			if flag_Mr:
+				M = x+y
+				r = x/y
+				fig = plt.figure()
+				ax = fig.add_subplot(projection='3d')
+				ax.scatter(M,r,z, color='tab:purple')
+				ax.set_xlabel('total mass')
+				ax.set_ylabel('mass ratio')
+				ax.set_zlabel('match')
+			else:
+				fig = plt.figure()
+				ax = fig.add_subplot(projection='3d')
+				ax.scatter(x,y,z, color='tab:purple')
+				ax.set_xlabel('mass 1')
+				ax.set_ylabel('mass 2')
+				ax.set_zlabel('match')
+			plt.show()
+
 		else:
-			fig = plt.figure()
-			ax = fig.add_subplot(projection='3d')
-			ax.scatter(x,y,z)
-			ax.set_xlabel('mass 1')
-			ax.set_ylabel('mass 2')
-			ax.set_zlabel('match')
-		plt.show()
+			msg = QMessageBox()
+			msg.setIcon(QMessageBox.Warning)
+			msg.setText("Error: no results to plot")
+			msg.setInformativeText('You need to execute Matched Filtering before trying to plot results.')
+			msg.setWindowTitle("Error")
+			msg.exec_()
 
 
 # open Window

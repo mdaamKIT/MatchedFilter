@@ -7,4 +7,4 @@ RUN mkdir /output
 RUN mkdir /input
 
 RUN pip install matplotlib numpy pycbc
-RUN pip install wave resampy              # do we need this?
+RUN pip install wave resampy

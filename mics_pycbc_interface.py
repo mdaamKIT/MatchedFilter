@@ -265,6 +265,7 @@ def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_
 	'Creates templates for further use in matched filtering (freq_domain) or as signals (time_domain).'
 	# parameters should be a numpy array of dim 2xN; flag_Mr, freq_domain and time_domain should be boolean.
 	N = len(parameters[0])
+	np.savetxt(savepath+'00_progress_create.dat', [0, N+1], fmt=['%i'])
 	masses = parameters
 	parameter_name = 'mm'
 	if flag_Mr:
@@ -293,6 +294,7 @@ def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_
 			list_of_names[name_index] = list_of_names[name_index]+'_'+str(number+2)
 
 	for index,m1 in enumerate(masses[0]):
+		np.savetxt(savepath+'00_progress_create.dat', [index+1, N+1], fmt=['%i'])
 		m2 = masses[1][index]
 		name = list_of_names[index]
 		# The pycbc-function in use raises a RuntimeError, if die Ringdown frequency is too high which occurs often with low masses (and the chosen approximant).
@@ -315,6 +317,7 @@ def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_
 			print(errorstring)
 			with open(savepath+'errors.txt', 'a') as errorfile:
 				errorfile.write(errorstring)
+	np.savetxt(savepath+'00_progress_create.dat', [N+1, N+1], fmt=['%i'])
 
 
 def matched_filter_single(data, template):  # psd, f_low, these arguments were cut out now
@@ -437,20 +440,24 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 def matched_filter_templatebank(data, templatebank):
 	'Perform the matched filtering of the data with every template inside a templatebank.'
 	# prepare output
+	num = len(templatebank.list_of_templates)
+	np.savetxt(data.savepath+'00_progress_mf.dat', [0, num+2], fmt=['%i'])
 	dtype = [('templatename', (np.str_,40)), ('maxmatch', np.float64), ('maxtime', np.float64), ('m1', np.float64), ('m2', np.float64), ('M', np.float64), ('r', np.float64)]
-	results = np.zeros((len(templatebank.list_of_templates),7))
+	results = np.zeros((num,7))
 	names = []
-	writedata = np.array(np.arange(len(templatebank.list_of_templates)), dtype=dtype)
-	sortdata = np.array(np.arange(len(templatebank.list_of_templates)), dtype=dtype)
+	writedata = np.array(np.arange(num), dtype=dtype)
+	sortdata = np.array(np.arange(num), dtype=dtype)
 	# calculate output
 	for index,template in enumerate(templatebank.list_of_templates):
+		np.savetxt(data.savepath+'00_progress_mf.dat', [index+1, num+2], fmt=['%i'])
 		_,_,_,Maxmatch = matched_filter_single(data, template)
 		results[index] = index, Maxmatch[0], Maxmatch[1], template.m1, template.m2, template.m1+template.m2, template.m1/template.m2
 		names.append(template.shortname)
 		writedata[index] = template.shortname, Maxmatch[0], Maxmatch[1], template.m1, template.m2, template.m1+template.m2, template.m1/template.m2
+	np.savetxt(data.savepath+'00_progress_mf.dat', [num+1, num+2], fmt=['%i'])
 	# sorted output
 	results_sorted = results[results[:,1].argsort()[::-1]]
-	for index in range(len(templatebank.list_of_templates)):
+	for index in range(num):
 		sortdata[index] = names[int(results_sorted[index,0])], results_sorted[index,1], results_sorted[index,2], results_sorted[index,3], results_sorted[index,4], results_sorted[index,5], results_sorted[index,6]
 	# save results
 	header = 'Matched Filtering results of '+data.shortname+': \n'
@@ -460,3 +467,4 @@ def matched_filter_templatebank(data, templatebank):
 	header = 'Matched Filtering results of '+data.shortname+' (sorted by match): \n'
 	header += 'templatename, match, time of match, template-m1, template-m2, template-M, template-r'
 	np.savetxt(data.savepath+'00_matched_filtering_results_sorted.dat', sortdata, fmt=['%s', '%f', '%f', '%f', '%f', '%f', '%f'], header=header)
+	np.savetxt(data.savepath+'00_progress_mf.dat', [num+2, num+2], fmt=['%i'])
