@@ -27,6 +27,8 @@ import matplotlib.pyplot as plt
 
 class CreateTemplatesWorker(QThread):
 
+	exceptionSignal = pyqtSignal()
+
 	def __init__(self, templatebank, array, path, basename, flag_Mr, freq_domain, time_domain):
 		super().__init__()
 		self.templatebank = templatebank
@@ -43,9 +45,15 @@ class CreateTemplatesWorker(QThread):
 			errorstring = 'Output path not found.\n'
 			raise NotADirectoryError(errorstring)
 		else:
-			self.templatebank.create_templates(self.array, self.path, self.basename, self.flag_Mr, self.freq_domain, self.time_domain)
+			try:
+				self.templatebank.create_templates(self.array, self.path, self.basename, self.flag_Mr, self.freq_domain, self.time_domain)
+			except:
+				self.exceptionSignal.emit()
+
 
 class MatchedFilteringWorker(QThread):
+
+	exceptionSignal = pyqtSignal()
 
 	def __init__(self, data, templatebank, OS, debugmode):
 		super().__init__()
@@ -55,7 +63,10 @@ class MatchedFilteringWorker(QThread):
 		self.debugmode = debugmode
 
 	def run(self):
-		self.data.matched_filter(self.templatebank, self.OS, self.debugmode)
+		try:
+			self.data.matched_filter(self.templatebank, self.OS, self.debugmode)
+		except:
+			self.exceptionSignal.emit()
 
 
 ### Screen objects
@@ -417,6 +428,7 @@ class CreateScreen(Screen):
 
 		# create worker Thread
 		self.worker = CreateTemplatesWorker(self.templatebank, array, self.path, basename, self.flag_Mr, freq_domain, time_domain)
+		self.worker.exceptionSignal.connect(self.create_exception)
 		self.worker.finished.connect(self.progress_dialog.close)
 		self.worker.start()
 
@@ -446,6 +458,16 @@ class CreateScreen(Screen):
 		self.worker.deleteLater()
 		if os.path.isfile(self.path+'00_progress_create.dat'):
 			os.remove(self.path+'00_progress_create.dat')
+
+	def create_exception(self):
+			msg = QMessageBox()
+			msg.setIcon(QMessageBox.Warning)
+			msg.setText("Error: no Templates created")
+			msg.setInformativeText('Most probably the docker engine is not running.\n\nTry the follwing steps:\n 1. Close this application.\n 2. Start the Docker Desktop application.\n 3. Start this application again.')
+			msg.setWindowTitle("Error")
+			msg.exec_()
+			print()
+			print('Something went wrong while trying to create templates. Most probably the docker engine is not running.')
 
 	
 
@@ -511,6 +533,7 @@ class DataScreen(Screen):
 
 			# create worker Thread
 			self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.config.get('main', 'os'), self.config.getboolean('main', 'debugmode'))
+			self.worker.exceptionSignal.connect(self.mf_exception)
 			self.worker.finished.connect(self.progress_dialog.close)
 			self.worker.start()
 
@@ -523,7 +546,7 @@ class DataScreen(Screen):
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Warning)
 			msg.setText("Error: no data object")
-			msg.setInformativeText('You need to load Data before execute Matched Filtering.')
+			msg.setInformativeText('You need to load data before executing matched filtering.')
 			msg.setWindowTitle("Error")
 			msg.exec_()
 
@@ -550,6 +573,15 @@ class DataScreen(Screen):
 		if os.path.isfile(self.data.savepath+'00_progress_mf.dat'):
 			os.remove(self.data.savepath+'00_progress_mf.dat')
 
+	def mf_exception(self):
+			msg = QMessageBox()
+			msg.setIcon(QMessageBox.Warning)
+			msg.setText("Error: no Matched Filtering done")
+			msg.setInformativeText('Most probably the docker engine is not running.\n\nTry the follwing steps:\n 1. Close this application.\n 2. Start the Docker Desktop application.\n 3. Start this application again.')
+			msg.setWindowTitle("Error")
+			msg.exec_()
+			print()
+			print('Something went wrong while trying to execute the matched filtering. Most probably the docker engine is not running.')
 
 	@pyqtSlot()
 	def plot_results_Mr(self):
