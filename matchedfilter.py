@@ -494,28 +494,39 @@ class DataScreen(Screen):
 
 	@pyqtSlot()
 	def matched_filter(self):
-		# Input for this method is from those sources:
-		# https://doc.qt.io/qtforpython-6/PySide6/QtCore/QThread.html#PySide6.QtCore.PySide6.QtCore.QThread.quit
-		# https://www.programcreek.com/python/example/108099/PyQt5.QtWidgets.QProgressDialog
 
-		# set up the progress_dialog
-		self.progress_dialog = QProgressDialog("Preparing Matched Filtering,\n please wait...", "Cancel", 0, len(self.templatebank.list_of_templates)+2, self)
-		self.progress_bar = QProgressBar(self.progress_dialog)
-		self.progress_bar.setMaximum(len(self.templatebank.list_of_templates)+2)
-		self.progress_dialog.setBar(self.progress_bar)
-		self.progress_dialog.setWindowTitle("Matched Filtering")
-		self.progress_dialog.setWindowModality(Qt.WindowModal)
-		self.progress_dialog.canceled.connect(self.mf_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
+		if isinstance(self.data, handler.Data):
+			# Input for the progress bar in this method is from those sources:
+			# https://doc.qt.io/qtforpython-6/PySide6/QtCore/QThread.html#PySide6.QtCore.PySide6.QtCore.QThread.quit
+			# https://www.programcreek.com/python/example/108099/PyQt5.QtWidgets.QProgressDialog
 
-		# create worker Thread
-		self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.config.get('main', 'os'), self.config.getboolean('main', 'debugmode'))
-		self.worker.finished.connect(self.progress_dialog.close)
-		self.worker.start()
+			# set up the progress_dialog
+			self.progress_dialog = QProgressDialog("Preparing Matched Filtering,\n please wait...", "Cancel", 0, len(self.templatebank.list_of_templates)+2, self)
+			self.progress_bar = QProgressBar(self.progress_dialog)
+			self.progress_bar.setMaximum(len(self.templatebank.list_of_templates)+2)
+			self.progress_dialog.setBar(self.progress_bar)
+			self.progress_dialog.setWindowTitle("Matched Filtering")
+			self.progress_dialog.setWindowModality(Qt.WindowModal)
+			self.progress_dialog.canceled.connect(self.mf_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
 
-		# setup timer to update the progress_dialog		
-		self.timer = QTimer()
-		self.timer.timeout.connect(self.mf_update_progress)
-		self.timer.start(1000)  # in ms - 1000 means the progress_bar gets updated once every second
+			# create worker Thread
+			self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.config.get('main', 'os'), self.config.getboolean('main', 'debugmode'))
+			self.worker.finished.connect(self.progress_dialog.close)
+			self.worker.start()
+
+			# setup timer to update the progress_dialog		
+			self.timer = QTimer()
+			self.timer.timeout.connect(self.mf_update_progress)
+			self.timer.start(1000)  # in ms - 1000 means the progress_bar gets updated once every second
+
+		else:
+			msg = QMessageBox()
+			msg.setIcon(QMessageBox.Warning)
+			msg.setText("Error: no data object")
+			msg.setInformativeText('You need to load Data before execute Matched Filtering.')
+			msg.setWindowTitle("Error")
+			msg.exec_()
+
 
 	def mf_update_progress(self):
 		counter = 0
@@ -547,7 +558,50 @@ class DataScreen(Screen):
 	@pyqtSlot()
 	def plot_results(self, flag_Mr=False):
 
-		if not isinstance(self.data, handler.Data):
+		if isinstance(self.data, handler.Data):
+
+			# load results
+			results_filename = self.data.savepath+'00_matched_filtering_results.dat'
+
+			if os.path.isfile(results_filename):
+				results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time', 'm1', 'm2', 'M', 'r'), 'formats': ('S5', 'f4', 'f4', 'f4', 'f4', 'f4', 'f4')})
+				# shape arrays
+				L = len(results)
+				x = np.zeros(L)
+				y = np.zeros(L)
+				z = np.zeros(L)
+				for index in range(L):
+					x[index] = int(results[index][3])  # m1
+					y[index] = int(results[index][4])  # m2
+					z[index] = results[index][1]       # match
+				# plot
+				if flag_Mr:
+					M = x+y
+					r = x/y
+					fig = plt.figure()
+					ax = fig.add_subplot(projection='3d')
+					ax.scatter(M,r,z, color='tab:purple')
+					ax.set_xlabel('total mass')
+					ax.set_ylabel('mass ratio')
+					ax.set_zlabel('match')
+				else:
+					fig = plt.figure()
+					ax = fig.add_subplot(projection='3d')
+					ax.scatter(x,y,z, color='tab:purple')
+					ax.set_xlabel('mass 1')
+					ax.set_ylabel('mass 2')
+					ax.set_zlabel('match')
+				plt.show()
+
+			else:
+				msg = QMessageBox()
+				msg.setIcon(QMessageBox.Warning)
+				msg.setText("Error: no results to plot")
+				msg.setInformativeText('You need to execute Matched Filtering before trying to plot results.')
+				msg.setWindowTitle("Error")
+				msg.exec_()
+
+		else:
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Warning)
 			msg.setText("Error: no data object")
@@ -555,47 +609,8 @@ class DataScreen(Screen):
 			msg.setWindowTitle("Error")
 			msg.exec_()
 
-		# load results
-		results_filename = self.data.savepath+'00_matched_filtering_results.dat'
 
-		if os.path.isfile(results_filename):
 
-			results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time', 'm1', 'm2', 'M', 'r'), 'formats': ('S5', 'f4', 'f4', 'f4', 'f4', 'f4', 'f4')})
-			# shape arrays
-			L = len(results)
-			x = np.zeros(L)
-			y = np.zeros(L)
-			z = np.zeros(L)
-			for index in range(L):
-				x[index] = int(results[index][3])  # m1
-				y[index] = int(results[index][4])  # m2
-				z[index] = results[index][1]       # match
-			# plot
-			if flag_Mr:
-				M = x+y
-				r = x/y
-				fig = plt.figure()
-				ax = fig.add_subplot(projection='3d')
-				ax.scatter(M,r,z, color='tab:purple')
-				ax.set_xlabel('total mass')
-				ax.set_ylabel('mass ratio')
-				ax.set_zlabel('match')
-			else:
-				fig = plt.figure()
-				ax = fig.add_subplot(projection='3d')
-				ax.scatter(x,y,z, color='tab:purple')
-				ax.set_xlabel('mass 1')
-				ax.set_ylabel('mass 2')
-				ax.set_zlabel('match')
-			plt.show()
-
-		else:
-			msg = QMessageBox()
-			msg.setIcon(QMessageBox.Warning)
-			msg.setText("Error: no results to plot")
-			msg.setInformativeText('You need to execute Matched Filtering before trying to plot results.')
-			msg.setWindowTitle("Error")
-			msg.exec_()
 
 
 # open Window

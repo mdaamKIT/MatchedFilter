@@ -1,0 +1,27 @@
+
+operating on any machine
+========================
+
+
+only in Windows
+===============
+
+Progress Bar
+------------
+[cosmetic] After finishing the processes with a progress bar (Matched Filtering or Template Creation), an empty progress bar pops up multiple times.
+
+
+
+
+
+
+
+
+
+
+
+
+only in MacOS
+=============
+
+The entire software has never been tested on MacOS. No idea what will work.
