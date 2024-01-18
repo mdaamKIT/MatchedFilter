@@ -87,7 +87,9 @@ class MPIConnection:
 	def run(self):
 		'Running the prepared commands and script inside the container and clearing them.'
 		# start container
-		container = self.client.containers.run("mdaamkit/mpi", detach=True, tty=True, volumes=self.volumes) # tty=True is necessary to keep the container running even if it has no jobs to do.
+		container = self.client.containers.run("mdaamkit/mpi", detach=True, tty=True, volumes=self.volumes) 
+			# tty=True is necessary to keep the container running even if it has no jobs to do.
+			# remove=True could be used to auto-remove the container after it has finished running
 		# run code in container
 		for command in self.commands:
 			container.exec_run(command)
