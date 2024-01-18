@@ -13,10 +13,10 @@ from configparser import ConfigParser
 import ast
 import numpy as np
 import templatebank_handler as handler  # selfmade; defines classes for matched filtering
+import time
 
 # for the plot
-import time
-from matplotlib.backends.qt_compat import QtWidgets
+# from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.backends.backend_qtagg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
@@ -67,6 +67,43 @@ class MatchedFilteringWorker(QThread):
 			self.data.matched_filter(self.templatebank, self.OS, self.debugmode)
 		except:
 			self.exceptionSignal.emit()
+
+
+class Canvas3DPlot(QMainWindow):
+	# following this: https://stackoverflow.com/questions/61934143/pyqt5-with-matplotlib-figure-the-event-loop-is-already-running
+	def __init__(self, results, flag_Mr, parent=None):
+		super().__init__(parent)
+
+		self.figure = Figure()
+		self.canvas = FigureCanvas(self.figure)
+		self.setCentralWidget(self.canvas)
+		self.addToolBar(Qt.TopToolBarArea, NavigationToolbar(self.canvas, self)) # needed?
+
+		# shape arrays
+		L = len(results)
+		x = np.zeros(L)
+		y = np.zeros(L)
+		z = np.zeros(L)
+		for index in range(L):
+			x[index] = int(results[index][3])  # m1
+			y[index] = int(results[index][4])  # m2
+			z[index] = results[index][1]       # match
+
+		# plot
+		self.ax = self.figure.subplots(subplot_kw=dict(projection='3d')) # subplot_kw=dict(projection='3d')
+		if flag_Mr:
+			M = x+y
+			r = x/y
+			self.ax.scatter(M,r,z, color='tab:purple')
+			self.ax.set_xlabel('total mass')
+			self.ax.set_ylabel('mass ratio')
+			self.ax.set_zlabel('match')
+		else:
+			self.ax.scatter(x,y,z, color='tab:purple')
+			self.ax.set_xlabel('mass 1')
+			self.ax.set_ylabel('mass 2')
+			self.ax.set_zlabel('match')
+		self.canvas.draw_idle()
 
 
 ### Screen objects
@@ -457,7 +494,11 @@ class CreateScreen(Screen):
 		self.worker.wait()
 		self.worker.deleteLater()
 		if os.path.isfile(self.path+'00_progress_create.dat'):
-			os.remove(self.path+'00_progress_create.dat')
+			try:
+				os.remove(self.path+'00_progress_create.dat')
+			except PermissionError:
+				print('No permission to remove 00_progress_mf.dat.')
+				print('Moving on.')
 
 	def create_exception(self):
 			msg = QMessageBox()
@@ -571,7 +612,11 @@ class DataScreen(Screen):
 		self.worker.wait()
 		self.worker.deleteLater()
 		if os.path.isfile(self.data.savepath+'00_progress_mf.dat'):
-			os.remove(self.data.savepath+'00_progress_mf.dat')
+			try:
+				os.remove(self.data.savepath+'00_progress_mf.dat')
+			except PermissionError:
+				print('No permission to remove 00_progress_mf.dat.')
+				print('Moving on.')
 
 	def mf_exception(self):
 			msg = QMessageBox()
@@ -594,36 +639,10 @@ class DataScreen(Screen):
 
 			# load results
 			results_filename = self.data.savepath+'00_matched_filtering_results.dat'
-
-			if os.path.isfile(results_filename):
+			if os.path.isfile(results_filename): 														# should I better do this in try/except style?
 				results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time', 'm1', 'm2', 'M', 'r'), 'formats': ('S5', 'f4', 'f4', 'f4', 'f4', 'f4', 'f4')})
-				# shape arrays
-				L = len(results)
-				x = np.zeros(L)
-				y = np.zeros(L)
-				z = np.zeros(L)
-				for index in range(L):
-					x[index] = int(results[index][3])  # m1
-					y[index] = int(results[index][4])  # m2
-					z[index] = results[index][1]       # match
-				# plot
-				if flag_Mr:
-					M = x+y
-					r = x/y
-					fig = plt.figure()
-					ax = fig.add_subplot(projection='3d')
-					ax.scatter(M,r,z, color='tab:purple')
-					ax.set_xlabel('total mass')
-					ax.set_ylabel('mass ratio')
-					ax.set_zlabel('match')
-				else:
-					fig = plt.figure()
-					ax = fig.add_subplot(projection='3d')
-					ax.scatter(x,y,z, color='tab:purple')
-					ax.set_xlabel('mass 1')
-					ax.set_ylabel('mass 2')
-					ax.set_zlabel('match')
-				plt.show()
+				self.canvas = Canvas3DPlot(results, flag_Mr)
+				self.canvas.show()
 
 			else:
 				msg = QMessageBox()
