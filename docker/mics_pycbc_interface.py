@@ -25,7 +25,7 @@ from datetime import datetime
 # I guess I don't need any methods for changing values as these objects probably won't live long enough
 # since the container will have to be restarted quite a few times.
 
-debugmode = True
+debugmode = False
 
 class TemplateBank:
 	def __init__(self):

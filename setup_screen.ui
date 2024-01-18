@@ -193,7 +193,7 @@
         <item>
          <widget class="QLabel" name="label_chooseDir">
           <property name="text">
-           <string>Choose a directory for the template bank:</string>
+           <string>Choose a directory to store templates:</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

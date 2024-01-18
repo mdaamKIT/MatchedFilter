@@ -56,18 +56,19 @@ class TemplateBank:
 		self.list_of_templates = []
 		self.list_of_bankpaths = []
 	
-	def add_template(self, bankpath, filename):
+	def add_template(self, bankpath, filename, flag_print=True):
 		'Add a single file to the TemplateBank.'
 		self.list_of_templates.append(Template(bankpath, filename))
 		if not bankpath in self.list_of_bankpaths: self.list_of_bankpaths.append(bankpath)
-		print('Added ', self.list_of_templates[-1].shortname, ' to the TemplateBank.')
+		if flag_print: print('Added ', self.list_of_templates[-1].shortname, ' to the template bank.')
 	
 	def add_directory(self, path):
 		'Add all .hdf-files in path to the TemplateBank.'
 		listofnames = [f for f in os.listdir(path) if f.endswith('.hdf')]
 		listofnames.sort()
 		for filename in listofnames:
-			self.add_template(path, filename)
+			self.add_template(path, filename, flag_print=False)
+		print('Added all .hdf files in '+path+' to the template bank.')
 
 	def create_templates(self, array_masses, bankpath, basename, flag_Mr=False, freq_domain=True, time_domain=False):
 		'Creates templates and adds them to the templatebank.'

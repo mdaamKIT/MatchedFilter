@@ -16,7 +16,6 @@ import templatebank_handler as handler  # selfmade; defines classes for matched 
 import time
 
 # for the plot
-# from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.backends.backend_qtagg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
@@ -200,11 +199,10 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 		else:
 			return fileName
 
-#### Do I really still need this? Could we just use the above one?
-	def openFileNamesDialog(self):
+	def openFileNamesDialog(self, DialogName, defaultpath):
 		options = QFileDialog.Options()
 		options |= QFileDialog.DontUseNativeDialog
-		files, _ = QFileDialog.getOpenFileNames(self,"Open Template-File(s)", self.config.get('main', 'bankpath'),"All Files (*);;Python Files (*.py)", options=options)
+		files, _ = QFileDialog.getOpenFileNames(self, DialogName, defaultpath ,"All Files (*);;Python Files (*.py)", options=options)
 		if not files:
 			print('No files selected.')
 		else:
@@ -247,7 +245,7 @@ class TemplateScreen(Screen):
 	### methods connected with Push Buttons
 	@pyqtSlot()
 	def load_directory(self):
-		path = self.getDirectoryDialog("Choose the directory to be loaded.", self.config.get('main', 'bankpath'))
+		path = self.getDirectoryDialog("Choose the directory to load Templates from", self.config.get('main', 'bankpath'))
 		if path:
 			self.templatebank.add_directory(path)
 			self.update_tmp_labels(path)
@@ -256,13 +254,14 @@ class TemplateScreen(Screen):
 
 	@pyqtSlot()
 	def load_file(self):
-		fullname = self.openFileNamesDialog()[0]
-		if fullname:
-			path = os.path.dirname(fullname)+'/'
-			filename = os.path.basename(fullname)
-			self.templatebank.add_template(path, filename)
-			self.update_tmp_labels(fullname)
-			self.show_tmp_labels()
+		filenames = self.openFileNamesDialog("Open Template-File(s)", self.config.get('main', 'bankpath'))
+		for fullname in filenames:
+			if fullname:
+				path = os.path.dirname(fullname)+'/'
+				filename = os.path.basename(fullname)
+				self.templatebank.add_template(path, filename)
+				self.update_tmp_labels(fullname)
+		self.show_tmp_labels()
 		return
 
 
@@ -282,9 +281,9 @@ class SetupScreen(Screen):             # maybe this should be a QDialog instead 
 		self.config.set('main', 'os', self.config.get('default', 'os'))
 		self.config.set('main', 'debugmode', self.config.get('default', 'debugmode'))
 		self.config.set('main', 'bankpath', self.config.get('default', 'bankpath'))
+		self.config.set('main', 'datapath', self.config.get('default', 'datapath'))
 		### to be removed:
 		if self.config.getboolean('main', 'debugmode'): self.config.set('main', 'bankpath', '/home/mic/promotion/f-prakt_material/LIGO/pycbc/MatchedFilter/tests/05_pre-final-tests/matchedfilter_testfiles/templates/')
-
 
 		# connect Push Buttons
 		self.pushButton_chooseDir.clicked.connect(self.choose_dir)
@@ -327,7 +326,7 @@ class SetupScreen(Screen):             # maybe this should be a QDialog instead 
 
 	@pyqtSlot()
 	def choose_dir(self):
-		path = self.getDirectoryDialog("Choose a directory for the template bank.", self.config.get('default', 'bankpath'))
+		path = self.getDirectoryDialog("Choose a directory to store templates.", self.config.get('default', 'bankpath'))
 		if path:
 			self.config.set('main', 'bankpath', path)
 		return
@@ -497,8 +496,7 @@ class CreateScreen(Screen):
 			try:
 				os.remove(self.path+'00_progress_create.dat')
 			except PermissionError:
-				print('No permission to remove 00_progress_mf.dat.')
-				print('Moving on.')
+				print('No permission to remove 00_progress_mf.dat. Moving on.')
 
 	def create_exception(self):
 			msg = QMessageBox()
@@ -536,9 +534,12 @@ class DataScreen(Screen):
 	### methods connected with Push Buttons
 	@pyqtSlot()
 	def load_data(self):
-		fullname = self.openFileNameDialog("Open Data-File", "C:/Users/Praktikum/Desktop/LIGO")
+		fullname = self.openFileNameDialog("Open Data-File", self.config.get('main', 'datapath'))
 		if fullname:
 			path = os.path.dirname(fullname)+'/'
+			self.config.set('main', 'datapath', path)
+			with open('config.ini', 'w') as f:
+				self.config.write(f)
 			filename = os.path.basename(fullname)
 			self.data = handler.Data(path, filename)
 			self.label_Data.setText( self.make_label(fullname, 35, 2) )
@@ -615,8 +616,7 @@ class DataScreen(Screen):
 			try:
 				os.remove(self.data.savepath+'00_progress_mf.dat')
 			except PermissionError:
-				print('No permission to remove 00_progress_mf.dat.')
-				print('Moving on.')
+				print('No permission to remove 00_progress_mf.dat. Moving on.')
 
 	def mf_exception(self):
 			msg = QMessageBox()
