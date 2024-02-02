@@ -351,6 +351,7 @@ class CreateScreen(Screen):
 		self.config = config
 		self.templatebank = templatebank
 		self.data = data
+		self.create_progress_counter = 0
 		self.labels = labels
 		self.flag_Mr = True
 		self.flag_All = True
@@ -454,7 +455,7 @@ class CreateScreen(Screen):
 		time_domain = self.checkBox_time.isChecked()
 
 		# set up the progress_dialog
-		self.progress_dialog = QProgressDialog("Preparing template creation,\n please wait...", "Cancel", 0, len(array[0])+1, self)
+		self.progress_dialog = QProgressDialog("Preparing template creation,\n please wait...", None, 0, len(array[0])+1, self) # None instead of "Cancel" as CancelButtonText removes the cancel-button.
 		self.progress_bar = QProgressBar(self.progress_dialog)
 		self.progress_bar.setMaximum(len(array[0])+1)
 		self.progress_dialog.setBar(self.progress_bar)
@@ -465,7 +466,7 @@ class CreateScreen(Screen):
 		# create worker Thread
 		self.worker = CreateTemplatesWorker(self.templatebank, array, self.path, basename, self.flag_Mr, freq_domain, time_domain)
 		self.worker.exceptionSignal.connect(self.create_exception)
-		self.worker.finished.connect(self.progress_dialog.close)
+		self.worker.finished.connect(self.create_stop)
 		self.worker.start()
 
 		# setup timer to update the progress_dialog		
@@ -474,20 +475,24 @@ class CreateScreen(Screen):
 		self.timer.start(1000)  # in ms - 1000 means the progress_bar gets updated once every second
 
 	def create_update_progress(self):
-		counter = 0
 		if os.path.isfile(self.path+'00_progress_create.dat'):
 			track_progress = np.loadtxt(self.path+'00_progress_create.dat', dtype=int)
-			self.progress_dialog.setLabelText("Creating templates...")
+			self.progress_dialog.setLabelText("creating templates...")
 			self.progress_bar.setMaximum(track_progress[1])
 			self.progress_dialog.setValue(track_progress[0])
+			if track_progress[0]==track_progress[1]:
+				self.timer.stop()
+				self.create_progress_counter = 0
 		else:
-			counter+=1
-			if counter > 59:
+			self.create_progress_counter+=1
+			if self.create_progress_counter > 59:
 				print('Template creation took too long to prepare, abort.')
+				self.create_stop()
 				return
 
 	def create_stop(self, event=None):
 		self.timer.stop()
+		self.progress_dialog.close()
 		self.worker.requestInterruption()
 		self.worker.quit()
 		self.worker.wait()
@@ -520,6 +525,7 @@ class DataScreen(Screen):
 		self.config
 		self.templatebank = templatebank
 		self.data = data
+		self.mf_progress_counter = 0
 		self.labels = labels
 		# connect Push Buttons
 		self.pushButton_loadData.clicked.connect(self.load_data)
@@ -565,7 +571,7 @@ class DataScreen(Screen):
 			# https://www.programcreek.com/python/example/108099/PyQt5.QtWidgets.QProgressDialog
 
 			# set up the progress_dialog
-			self.progress_dialog = QProgressDialog("Preparing matched filtering,\n please wait...", "Cancel", 0, len(self.templatebank.list_of_templates)+2, self)
+			self.progress_dialog = QProgressDialog("Preparing matched filtering,\n please wait...", None, 0, len(self.templatebank.list_of_templates)+2, self) # None instead of "Cancel" as CancelButtonText removes the cancel-button.
 			self.progress_bar = QProgressBar(self.progress_dialog)
 			self.progress_bar.setMaximum(len(self.templatebank.list_of_templates)+2)
 			self.progress_dialog.setBar(self.progress_bar)
@@ -576,7 +582,7 @@ class DataScreen(Screen):
 			# create worker Thread
 			self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.config.get('main', 'os'), self.config.getboolean('main', 'debugmode'))
 			self.worker.exceptionSignal.connect(self.mf_exception)
-			self.worker.finished.connect(self.progress_dialog.close)
+			self.worker.finished.connect(self.mf_stop)
 			self.worker.start()
 
 			# setup timer to update the progress_dialog		
@@ -597,17 +603,22 @@ class DataScreen(Screen):
 		counter = 0
 		if os.path.isfile(self.data.savepath+'00_progress_mf.dat'):
 			track_progress = np.loadtxt(self.data.savepath+'00_progress_mf.dat', dtype=int)
-			self.progress_dialog.setLabelText("Matched filtering in progress...")
+			self.progress_dialog.setLabelText("matched filtering in progress...")
 			self.progress_bar.setMaximum(track_progress[1])
 			self.progress_dialog.setValue(track_progress[0])
+			if track_progress[0]==track_progress[1]:
+				self.timer.stop()
+				self.mf_progress_counter = 0
 		else:
-			counter+=1
-			if counter > 59:
+			self.mf_progress_counter+=1
+			if self.mf_progress_counter > 59:
 				print('Matched filtering took too long to prepare, abort.')
+				self.mf_stop()
 				return
 
 	def mf_stop(self, event=None):
 		self.timer.stop()
+		self.progress_dialog.close()
 		self.worker.requestInterruption()
 		self.worker.quit()
 		self.worker.wait()
