@@ -477,12 +477,18 @@ class CreateScreen(Screen):
 	def create_update_progress(self):
 		if os.path.isfile(self.path+'00_progress_create.dat'):
 			track_progress = np.loadtxt(self.path+'00_progress_create.dat', dtype=int)
-			self.progress_dialog.setLabelText("creating templates...")
-			self.progress_bar.setMaximum(track_progress[1])
-			self.progress_dialog.setValue(track_progress[0])
-			if track_progress[0]==track_progress[1]:
-				self.timer.stop()
-				self.create_progress_counter = 0
+			try:
+				self.progress_dialog.setLabelText("creating templates...")
+				self.progress_bar.setMaximum(track_progress[1])
+				self.progress_dialog.setValue(track_progress[0])
+				if track_progress[0]==track_progress[1]:
+					self.timer.stop()
+					self.create_progress_counter = 0
+			except IndexError:                                      # trying to debug an irregularily appearing IndexError when track_progress in the middle of the process seems to stop being an array with more than one entry.
+				print('track_progress = ', track_progress)              # should be an array of two integers; first smaller than second
+				print('type(track_progress) = ', type(track_progress))  # should be <class 'numpy.ndarray'>
+				print('len(track_progress) = ', len(track_progress))    # should be 2
+				raise
 		else:
 			self.create_progress_counter+=1
 			if self.create_progress_counter > 59:
@@ -603,12 +609,18 @@ class DataScreen(Screen):
 		counter = 0
 		if os.path.isfile(self.data.savepath+'00_progress_mf.dat'):
 			track_progress = np.loadtxt(self.data.savepath+'00_progress_mf.dat', dtype=int)
-			self.progress_dialog.setLabelText("matched filtering in progress...")
-			self.progress_bar.setMaximum(track_progress[1])
-			self.progress_dialog.setValue(track_progress[0])
-			if track_progress[0]==track_progress[1]:
-				self.timer.stop()
-				self.mf_progress_counter = 0
+			try:
+				self.progress_dialog.setLabelText("matched filtering in progress...")
+				self.progress_bar.setMaximum(track_progress[1])
+				self.progress_dialog.setValue(track_progress[0])
+				if track_progress[0]==track_progress[1]:
+					self.timer.stop()
+					self.mf_progress_counter = 0
+			except IndexError:                                      # trying to debug an irregularily appearing IndexError when track_progress in the middle of the process seems to stop being an array with more than one entry.
+				print('track_progress = ', track_progress)              # should be an array of two integers; first smaller than second
+				print('type(track_progress) = ', type(track_progress))  # should be <class 'numpy.ndarray'>
+				print('len(track_progress) = ', len(track_progress))    # should be 2
+				raise
 		else:
 			self.mf_progress_counter+=1
 			if self.mf_progress_counter > 59:

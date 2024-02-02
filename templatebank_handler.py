@@ -77,7 +77,8 @@ class TemplateBank:
 		list_old_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf')]
 		connection.Create_Templates(array_masses, bankpath, basename, flag_Mr, freq_domain, time_domain)
 		list_new_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf') and f not in list_old_templates]
-		for filename in list_new_templates: self.add_template(bankpath, filename)
+		for filename in list_new_templates: self.add_template(bankpath, filename, flag_print=False)
+		print('Created '+str(len(array_masses[0]))+' templates and added them to the template bank.')
 
 ######### I have to delete this, but first see, where it gets called
 	def create_templates_Mr(self, array_Mr, bankpath, basename, freq_domain=True, time_domain=False):
