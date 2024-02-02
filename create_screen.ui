@@ -755,6 +755,28 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <tabstops>
+  <tabstop>radioButton_Mr</tabstop>
+  <tabstop>radioButton_m1m2</tabstop>
+  <tabstop>lineEdit_Para1Start</tabstop>
+  <tabstop>lineEdit_Para1Stop</tabstop>
+  <tabstop>lineEdit_Para1Number</tabstop>
+  <tabstop>lineEdit_Para2Start</tabstop>
+  <tabstop>lineEdit_Para2Stop</tabstop>
+  <tabstop>lineEdit_Para2Number</tabstop>
+  <tabstop>checkBox_Para1Code</tabstop>
+  <tabstop>lineEdit_Para1Code</tabstop>
+  <tabstop>checkBox_Para2Code</tabstop>
+  <tabstop>lineEdit_Para2Code</tabstop>
+  <tabstop>radioButton_AllOn</tabstop>
+  <tabstop>radioButton_AllOff</tabstop>
+  <tabstop>lineEdit_FilenameBase</tabstop>
+  <tabstop>checkBox_freq</tabstop>
+  <tabstop>checkBox_time</tabstop>
+  <tabstop>pushButton_changeOutput</tabstop>
+  <tabstop>pushButton_create</tabstop>
+  <tabstop>pushButton_back</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

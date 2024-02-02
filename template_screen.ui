@@ -289,6 +289,12 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <tabstops>
+  <tabstop>pushButton_createTemplates</tabstop>
+  <tabstop>pushButton_loadDirectory</tabstop>
+  <tabstop>pushButton_loadFile</tabstop>
+  <tabstop>pushButton_continue</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
