@@ -169,7 +169,7 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 			answer = QMessageBox.question(
 				self,
 				"No templates have been loaded", 
-				'It seems, you did not load any templates in the Template Management.\n\nDo you want to continue anyway?',
+				'It seems, you did not load any templates in the template management.\n\nDo you want to continue anyway?',
 				QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
 				)
 			if answer==QMessageBox.StandardButton.No:
@@ -226,7 +226,7 @@ class TemplateScreen(Screen):
 		# general settings and initiation of ui
 		super().__init__(config, templatebank, labels)
 		loadUi(os.getcwd()+'/template_screen.ui',self)
-		self.setWindowTitle('Matched Filtering with pycbc (Template Management)')
+		self.setWindowTitle('Matched filtering with pycbc (template management)')
 		self.config = config
 		if templatebank:
 			self.templatebank = templatebank
@@ -245,7 +245,7 @@ class TemplateScreen(Screen):
 	### methods connected with Push Buttons
 	@pyqtSlot()
 	def load_directory(self):
-		path = self.getDirectoryDialog("Choose the directory to load Templates from", self.config.get('main', 'bankpath'))
+		path = self.getDirectoryDialog("Choose the directory to load templates from", self.config.get('main', 'bankpath'))
 		if path:
 			self.templatebank.add_directory(path)
 			self.update_tmp_labels(path)
@@ -254,7 +254,7 @@ class TemplateScreen(Screen):
 
 	@pyqtSlot()
 	def load_file(self):
-		filenames = self.openFileNamesDialog("Open Template-File(s)", self.config.get('main', 'bankpath'))
+		filenames = self.openFileNamesDialog("Open template-file(s)", self.config.get('main', 'bankpath'))
 		for fullname in filenames:
 			if fullname:
 				path = os.path.dirname(fullname)+'/'
@@ -271,7 +271,7 @@ class SetupScreen(Screen):             # maybe this should be a QDialog instead 
 	def __init__(self, config, templatebank, data=None, labels=None):
 		super().__init__(config, templatebank, labels)
 		loadUi(os.getcwd()+'/setup_screen.ui', self)
-		self.setWindowTitle('Matched Filtering with pycbc (Setup on first startup)')
+		self.setWindowTitle('Matched filtering with pycbc (Setup on first startup)')
 		self.config = config
 		self.templatebank = templatebank
 		self.data = data
@@ -347,7 +347,7 @@ class CreateScreen(Screen):
 		# general settings and initiation of ui
 		super().__init__(config, templatebank, labels)
 		loadUi(os.getcwd()+'/create_screen.ui',self)
-		self.setWindowTitle('Matched Filtering with pycbc (Template Creation)')
+		self.setWindowTitle('Matched filtering with pycbc (template creation)')
 		self.config = config
 		self.templatebank = templatebank
 		self.data = data
@@ -454,11 +454,11 @@ class CreateScreen(Screen):
 		time_domain = self.checkBox_time.isChecked()
 
 		# set up the progress_dialog
-		self.progress_dialog = QProgressDialog("Preparing Template creation,\n please wait...", "Cancel", 0, len(array[0])+1, self)
+		self.progress_dialog = QProgressDialog("Preparing template creation,\n please wait...", "Cancel", 0, len(array[0])+1, self)
 		self.progress_bar = QProgressBar(self.progress_dialog)
 		self.progress_bar.setMaximum(len(array[0])+1)
 		self.progress_dialog.setBar(self.progress_bar)
-		self.progress_dialog.setWindowTitle("Create Templates")
+		self.progress_dialog.setWindowTitle("Create templates")
 		self.progress_dialog.setWindowModality(Qt.WindowModal)
 		self.progress_dialog.canceled.connect(self.create_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
 
@@ -477,13 +477,13 @@ class CreateScreen(Screen):
 		counter = 0
 		if os.path.isfile(self.path+'00_progress_create.dat'):
 			track_progress = np.loadtxt(self.path+'00_progress_create.dat', dtype=int)
-			self.progress_dialog.setLabelText("Creating Templates...")
+			self.progress_dialog.setLabelText("Creating templates...")
 			self.progress_bar.setMaximum(track_progress[1])
 			self.progress_dialog.setValue(track_progress[0])
 		else:
 			counter+=1
 			if counter > 59:
-				print('Template Creation took too long to prepare, abort.')
+				print('Template creation took too long to prepare, abort.')
 				return
 
 	def create_stop(self, event=None):
@@ -501,7 +501,7 @@ class CreateScreen(Screen):
 	def create_exception(self):
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Warning)
-			msg.setText("Error: no Templates created")
+			msg.setText("Error: no templates created")
 			msg.setInformativeText('Most probably the docker engine is not running.\n\nTry the follwing steps:\n 1. Close this application.\n 2. Start the Docker Desktop application.\n 3. Start this application again.')
 			msg.setWindowTitle("Error")
 			msg.exec_()
@@ -516,7 +516,7 @@ class DataScreen(Screen):
 		# general settings and initiation of ui
 		super().__init__(config, templatebank, labels)
 		loadUi(os.getcwd()+'/data_screen.ui',self)
-		self.setWindowTitle('Matched Filtering with pycbc (Matched Filtering)')
+		self.setWindowTitle('Matched filtering with pycbc (matched filtering)')
 		self.config
 		self.templatebank = templatebank
 		self.data = data
@@ -565,11 +565,11 @@ class DataScreen(Screen):
 			# https://www.programcreek.com/python/example/108099/PyQt5.QtWidgets.QProgressDialog
 
 			# set up the progress_dialog
-			self.progress_dialog = QProgressDialog("Preparing Matched Filtering,\n please wait...", "Cancel", 0, len(self.templatebank.list_of_templates)+2, self)
+			self.progress_dialog = QProgressDialog("Preparing matched filtering,\n please wait...", "Cancel", 0, len(self.templatebank.list_of_templates)+2, self)
 			self.progress_bar = QProgressBar(self.progress_dialog)
 			self.progress_bar.setMaximum(len(self.templatebank.list_of_templates)+2)
 			self.progress_dialog.setBar(self.progress_bar)
-			self.progress_dialog.setWindowTitle("Matched Filtering")
+			self.progress_dialog.setWindowTitle("Matched filtering")
 			self.progress_dialog.setWindowModality(Qt.WindowModal)
 			self.progress_dialog.canceled.connect(self.mf_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
 
@@ -597,13 +597,13 @@ class DataScreen(Screen):
 		counter = 0
 		if os.path.isfile(self.data.savepath+'00_progress_mf.dat'):
 			track_progress = np.loadtxt(self.data.savepath+'00_progress_mf.dat', dtype=int)
-			self.progress_dialog.setLabelText("Matched Filtering in progress...")
+			self.progress_dialog.setLabelText("Matched filtering in progress...")
 			self.progress_bar.setMaximum(track_progress[1])
 			self.progress_dialog.setValue(track_progress[0])
 		else:
 			counter+=1
 			if counter > 59:
-				print('Matched Filtering took too long to prepare, abort.')
+				print('Matched filtering took too long to prepare, abort.')
 				return
 
 	def mf_stop(self, event=None):
@@ -621,7 +621,7 @@ class DataScreen(Screen):
 	def mf_exception(self):
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Warning)
-			msg.setText("Error: no Matched Filtering done")
+			msg.setText("Error: no matched filtering done")
 			msg.setInformativeText('Most probably the docker engine is not running.\n\nTry the follwing steps:\n 1. Close this application.\n 2. Start the Docker Desktop application.\n 3. Start this application again.')
 			msg.setWindowTitle("Error")
 			msg.exec_()
@@ -648,7 +648,7 @@ class DataScreen(Screen):
 				msg = QMessageBox()
 				msg.setIcon(QMessageBox.Warning)
 				msg.setText("Error: no results to plot")
-				msg.setInformativeText('You need to execute Matched Filtering before trying to plot results.')
+				msg.setInformativeText('You need to execute matched filtering before trying to plot results.')
 				msg.setWindowTitle("Error")
 				msg.exec_()
 
@@ -656,7 +656,7 @@ class DataScreen(Screen):
 			msg = QMessageBox()
 			msg.setIcon(QMessageBox.Warning)
 			msg.setText("Error: no data object")
-			msg.setInformativeText('You need to load Data and execute Matched Filtering before trying to plot results.')
+			msg.setInformativeText('You need to load Data and execute matched filtering before trying to plot results.')
 			msg.setWindowTitle("Error")
 			msg.exec_()
 

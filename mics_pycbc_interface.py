@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import matplotlib.pyplot as plt
-from pycbc.waveform import get_td_waveform
+from pycbc.waveform import get_td_waveform,td_approximants
 from pycbc import types
 from pycbc.filter import matched_filter_core, sigmasq #, matched_filter, match
 import resampy     # https://resampy.readthedocs.io/en/stable/example.html
@@ -17,15 +17,28 @@ from datetime import datetime
 
 # This file seeks to define some useful functions to use the pycbc-functions in my lab.
 
-### Redefine classes
-#   ----------------
+
+### Global definitions
+#   ------------------
+
+debugmode = False
+
+# approximants for template creation
+APX_DEFAULT = 'SEOBNRv4'   # By now I just randomly picked one that makes nice waveforms with inspiral, merger and ringdown.
+APX_ALL = td_approximants()
+APX_FORBIDDEN = ['SEOBNRv4', 'EOBNRv2_ROM', 'EOBNRv2HM_ROM', 'IMRPhenomXP', 'PhenSpinTaylor', 'PhenSpinTaylorRD', 
+	'SEOBNRv1_ROM_DoubleSpin', 'SEOBNRv1_ROM_EffectiveSpin', 'SEOBNRv2_ROM_DoubleSpin', 'SEOBNRv2_ROM_DoubleSpin_HI', 'SEOBNRv2_ROM_EffectiveSpin', 
+	'SEOBNRv4_ROM_NRTidalv2'] # Trying these apxs caused python to crash with a "Segmentation fault (core dumped)" - an exception it could not handle.
+APX_ALLOWED = list(set(APX_ALL).difference(APX_FORBIDDEN))
+
+
+### Redefine classes inside the container
+#   -------------------------------------
 
 # It is just more handy to input an object as an argument of a function than every of its properties seperately.
 # This is why I decided to transfer the Template and Data objects from the templatebank_handler on the host machine in here.
 # I guess I don't need any methods for changing values as these objects probably won't live long enough
 # since the container will have to be restarted quite a few times.
-
-debugmode = False
 
 class TemplateBank:
 	def __init__(self):
@@ -142,7 +155,7 @@ def load_wav( filename, channel='unclear', debugmode=False ):
 # I didnt find a good way to manipulate LIGOTimeGPS objects, so I defined functions to make time definitions in pycbc.types.TimeSeries objects easier.
 # Note that I didnt quite use the time properties in the TimeSeries in the originally intended way since I do not care for absolute times, calender days and so on.
 # This is why I use GPS_EPOCH as the starting point of every set of loaded data.
-# datetime.timedelta objects can just be added and subtracted.
+# Note: datetime.timedelta objects can just be added and subtracted to/from each other.
 
 import lal.gpstime as gps
 
@@ -194,11 +207,10 @@ def segment_data(filename, preferred_samplerate=4096, segment_duration=1):
 	return data_segments
 
 
-def make_template( m1, m2, samplerate=4096, duration=1.0, flag_show=False ):
+def make_template( m1, m2, apx='SEOBNRv4', samplerate=4096, duration=1.0, flag_show=False ):
 	'Create a template in frequency-domain or time-domain or both.'
 
 	# some hard-coded settings
-	apx = 'SEOBNRv4'   # by now I just randomly picked any
 	spin = 0.9
 	f_low = 30         # I could use something above 50Hz to exclude line frequency transmitted by the amplifier.
 
@@ -227,6 +239,26 @@ def make_template( m1, m2, samplerate=4096, duration=1.0, flag_show=False ):
 
 	return hp_freq, hp
 
+
+def make_template_any_apx( m1, m2, samplerate=4096, duration=1.0, flag_show=False, errorname='nameless_template' ):
+	'Create a template. Try all allowed approximants (apx), if default apx fails.'
+	try:
+		hp_freq, hp = make_template(m1, m2, apx=APX_DEFAULT)
+		return hp_freq, hp
+	except:
+		print('Creating template with default approximant ('+APX_DEFAULT+') failed. Trying other ones.')
+		for apx in APX_ALLOWED:
+			try:
+				hp_freq, hp = make_template(m1,m2,apx=apx)
+				print('Creating template with other approximant ('+apx+') worked.')
+				return hp_freq, hp
+				break
+			except RuntimeError:
+				pass              # Probalby the approximant could not handle this particular set of parameters. Just continue trying the other approximants.
+	errorstring = errorname+' ('+str(datetime.now())+'): None of the approximants was able to create a template with masses '+str(m1)+' and '+str(m2)+'.\n'
+	print(errorstring)
+	with open(savepath+'errors.txt', 'a') as errorfile:
+		errorfile.write(errorstring)
 
 
 def save_FrequencySeries(freq_series, path, m1, m2):
@@ -297,16 +329,10 @@ def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_
 		np.savetxt(savepath+'00_progress_create.dat', [index+1, N+1], fmt=['%i'])
 		m2 = masses[1][index]
 		name = list_of_names[index]
-		# The pycbc-function in use raises a RuntimeError, if die Ringdown frequency is too high which occurs often with low masses (and the chosen approximant).
 		try:
-			strain_freq, strain_time = make_template(m1,m2)
+			strain_freq, strain_time = make_template_any_apx(m1,m2, errorname=name)
 			if time_domain: strain_time.save_to_wav(savepath+name+'.wav')
 			if freq_domain: save_FrequencySeries(strain_freq, savepath+name+'.hdf', m1, m2)
-		except RuntimeError:
-			errorstring = name+' ('+str(datetime.now())+'): There was a RuntimeError; probably your masses '+str(m1)+', '+str(m2)+' were too low.\n'
-			print(errorstring)
-			with open(savepath+'errors.txt', 'a') as errorfile:
-				errorfile.write(errorstring)
 		except ValueError:
 			errorstring = name+' ('+str(datetime.now())+'): There was a ValueError; probably a .hdf-file of that name already existed.\n'
 			print(errorstring)
