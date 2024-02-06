@@ -293,27 +293,39 @@ def load_FrequencySeries(path):
 
 
 
-def create_templates(parameters, savepath, basename, flag_Mr, freq_domain, time_domain):
+def create_templates(parameters, savepath, basename, attribute, freq_domain, time_domain):
 	'Creates templates for further use in matched filtering (freq_domain) or as signals (time_domain).'
 	# parameters should be a numpy array of dim 2xN; flag_Mr, freq_domain and time_domain should be boolean.
+	# keyword parameter should be either 'individual', 'total', or 'chirp'
 	N = len(parameters[0])
 	np.savetxt(savepath+'00_progress_create.dat', [0, N+1], fmt=['%i'])
 	masses = parameters
 	parameter_name = 'mm'
-	if flag_Mr:
+	if attribute == 'total':
 		M = parameters[0]
 		r = parameters[1]
-		m2 = M/(r+1)
+		m1 = M/(r+1)
+		m2 = r*m1
+		masses = np.asarray((m1,m2))
+		parameter_name = 'MR'
+	elif attribute == 'chirp':
+		Mc = parameters[0]
+		r = parameters[1]
+		m2 = Mc*np.power(np.power(r,-2)+np.power(r,-3), 0.2)
 		m1 = r*m2
 		masses = np.asarray((m1,m2))
-		parameter_name = 'Mr'
+		parameter_name = 'McR'
+	elif attribute != 'individual':
+		raise ValueError('Keyword attribute should be individual, total or chrip but is ',attribute)
+
 
 	# create names and make distinctions between names if necessary
 	list_of_names = ['']*N
 	for index in range(N):
 		name_0 = str(round(parameters[0][index]))
-		name_1 = str(round(parameters[1][index]))
-		if flag_Mr:
+		if attribute == 'individual':
+			name_1 = str(round(parameters[1][index]))
+		else:
 			name_1 = str(round(parameters[1][index]*1000))
 		list_of_names[index] = basename+parameter_name+'_'+name_0+'-'+name_1
 	D = defaultdict(list)

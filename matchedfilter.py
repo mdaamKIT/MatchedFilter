@@ -28,13 +28,13 @@ class CreateTemplatesWorker(QThread):
 
 	exceptionSignal = pyqtSignal()
 
-	def __init__(self, templatebank, array, path, basename, flag_Mr, freq_domain, time_domain):
+	def __init__(self, templatebank, array, path, basename, attribute, freq_domain, time_domain):
 		super().__init__()
 		self.templatebank = templatebank
 		self.array = array
 		self.path = path
 		self.basename = basename
-		self.flag_Mr = flag_Mr
+		self.attribute = attribute
 		self.freq_domain = freq_domain
 		self.time_domain = time_domain
 
@@ -45,7 +45,7 @@ class CreateTemplatesWorker(QThread):
 			raise NotADirectoryError(errorstring)
 		else:
 			try:
-				self.templatebank.create_templates(self.array, self.path, self.basename, self.flag_Mr, self.freq_domain, self.time_domain)
+				self.templatebank.create_templates(self.array, self.path, self.basename, self.attribute, self.freq_domain, self.time_domain)
 			except:
 				self.exceptionSignal.emit()
 
@@ -70,7 +70,7 @@ class MatchedFilteringWorker(QThread):
 
 class Canvas3DPlot(QMainWindow):
 	# following this: https://stackoverflow.com/questions/61934143/pyqt5-with-matplotlib-figure-the-event-loop-is-already-running
-	def __init__(self, results, flag_Mr, parent=None):
+	def __init__(self, results, attribute='individual', parent=None):
 		super().__init__(parent)
 
 		self.figure = Figure()
@@ -90,11 +90,18 @@ class Canvas3DPlot(QMainWindow):
 
 		# plot
 		self.ax = self.figure.subplots(subplot_kw=dict(projection='3d')) # subplot_kw=dict(projection='3d')
-		if flag_Mr:
+		if attribute == 'total':
 			M = x+y
-			r = x/y
+			r = y/x
 			self.ax.scatter(M,r,z, color='tab:purple')
 			self.ax.set_xlabel('total mass')
+			self.ax.set_ylabel('mass ratio')
+			self.ax.set_zlabel('match')
+		elif attribute == 'chirp':
+			Mc = np.power(np.power(x*y, 3)/(x+y), 0.2)
+			r = y/x
+			self.ax.scatter(Mc,r,z, color='tab:purple')
+			self.ax.set_xlabel('chirp mass')
 			self.ax.set_ylabel('mass ratio')
 			self.ax.set_zlabel('match')
 		else:
@@ -353,23 +360,25 @@ class CreateScreen(Screen):
 		self.data = data
 		self.create_progress_counter = 0
 		self.labels = labels
-		self.flag_Mr = True
+		self.attribute = 'individual'
 		self.flag_All = True
 		self.path = self.config.get('main', 'bankpath')
 		self.label_path.setText(self.path)
 		# connect pushButtons
+		self.pushButton_chirpmass.clicked.connect(self.chirpmass_info)
 		self.pushButton_changeOutput.clicked.connect(self.change_output)
 		self.pushButton_create.clicked.connect(self.create_templates)
 		self.pushButton_back.clicked.connect(self.to_template_screen)
 		# set up radioButtons
-		self.ButtonGroup_Parameter = QButtonGroup()
-		self.ButtonGroup_Parameter.addButton(self.radioButton_Mr, id=1)
-		self.ButtonGroup_Parameter.addButton(self.radioButton_m1m2, id=2)
-		self.radioButton_Mr.setChecked(True)
-		self.ButtonGroup_Parameter.buttonClicked.connect(self.change_Parameter)
+		self.ButtonGroup_Attribute = QButtonGroup()
+		self.ButtonGroup_Attribute.addButton(self.radioButton_individual, id=1)
+		self.ButtonGroup_Attribute.addButton(self.radioButton_total, id=2)
+		self.ButtonGroup_Attribute.addButton(self.radioButton_chirp, id=3)
+		self.radioButton_individual.setChecked(True)
+		self.ButtonGroup_Attribute.buttonClicked.connect(self.change_Attribute)
 		self.ButtonGroup_All = QButtonGroup()
-		self.ButtonGroup_All.addButton(self.radioButton_AllOn, id=3)
-		self.ButtonGroup_All.addButton(self.radioButton_AllOff, id=4)
+		self.ButtonGroup_All.addButton(self.radioButton_AllOn, id=4)
+		self.ButtonGroup_All.addButton(self.radioButton_AllOff, id=5)
 		self.radioButton_AllOn.setChecked(True)
 		self.ButtonGroup_All.buttonClicked.connect(self.change_All)
 		# set up checkBoxes
@@ -379,6 +388,18 @@ class CreateScreen(Screen):
 		self.checkBox_time.setChecked(False)
 
 	@pyqtSlot()
+	def chirpmass_info(self):
+		msg = QMessageBox()
+		msg.setIcon(QMessageBox.Information)
+		msg.setText("Chirp Mass")
+		msg.setInformativeText('The quantity chirp mass is the mass parameter that best describes the gravitational wave in most cases. '+
+			'It is defined by: \n\n'+
+			'Mc = [(m1*m2)^3/(m1+m2)]^(1/5).\n\n'+
+			'Analyzing your signals you will probably find that the best matching templates often share the same chirp mass.')
+		msg.setWindowTitle("Information: chirp mass")
+		msg.exec_()
+
+	@pyqtSlot()
 	def change_output(self):
 		self.path = self.getDirectoryDialog('Choose the new output directory.', self.path)
 		if self.path:
@@ -386,25 +407,33 @@ class CreateScreen(Screen):
 			self.show()
 
 	@pyqtSlot()
-	def change_Parameter(self):
-		'Change the Layout and flag_Mr, if one of the Parameter radioButtons is clicked.'
-		if self.ButtonGroup_Parameter.checkedId() == 1:
-			self.flag_Mr = True
-			self.label_Parameter1.setText('total mass (M)')
-			self.label_Parameter2.setText('mass ratio (r)')
-			self.label_FilenameExt.setText("+'Mr_[M]-[r]'")
-			self.show()
-		else:
-			self.flag_Mr = False
+	def change_Attribute(self):
+		'Change the Layout and keyword attribute, if one of the Attribute radioButtons is clicked.'
+		if self.ButtonGroup_Attribute.checkedId() == 1:
+			self.attribute = 'individual'
 			self.label_Parameter1.setText('mass 1 (m1)')
 			self.label_Parameter2.setText('mass 2 (m2)')
 			self.label_FilenameExt.setText("+'mm_[m1]-[m2]'")
 			self.show()
+		elif self.ButtonGroup_Attribute.checkedId() == 2:
+			self.attribute = 'total'
+			self.label_Parameter1.setText('total mass (M)')
+			self.label_Parameter2.setText('mass ratio (R)')
+			self.label_FilenameExt.setText("+'MR_[M]-[R]'")
+			self.show()
+		elif self.ButtonGroup_Attribute.checkedId() == 3:
+			self.attribute = 'chirp'
+			self.label_Parameter1.setText('chirp mass (Mc)')
+			self.label_Parameter2.setText('mass ratio (R)')
+			self.label_FilenameExt.setText("+'McR_[Mc]-[R]'")
+			self.show()
+		else:
+			raise ValueError('Unexpected behaviour of the ButtonGroup_Attribute: self.ButtonGroup_Attribute.checkedId() = ',self.ButtonGroup_Attribute.checkedId())
 
 	@pyqtSlot()
 	def change_All(self):
 		'Change the Layout and flag_All, if one of the All radioButtons is clicked.'
-		if self.ButtonGroup_All.checkedId() == 3:
+		if self.ButtonGroup_All.checkedId() == 4:
 			self.flag_All = True
 		else:
 			self.flag_All = False
@@ -464,7 +493,7 @@ class CreateScreen(Screen):
 		self.progress_dialog.canceled.connect(self.create_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
 
 		# create worker Thread
-		self.worker = CreateTemplatesWorker(self.templatebank, array, self.path, basename, self.flag_Mr, freq_domain, time_domain)
+		self.worker = CreateTemplatesWorker(self.templatebank, array, self.path, basename, self.attribute, freq_domain, time_domain)
 		self.worker.exceptionSignal.connect(self.create_exception)
 		self.worker.finished.connect(self.create_stop)
 		self.worker.start()
@@ -489,12 +518,13 @@ class CreateScreen(Screen):
 				print('type(track_progress) = ', type(track_progress))  # should be <class 'numpy.ndarray'>
 				print('len(track_progress) = ', len(track_progress))    # should be 2
 				raise
-		else:
-			self.create_progress_counter+=1
-			if self.create_progress_counter > 59:
-				print('Template creation took too long to prepare, abort.')
-				self.create_stop()
-				return
+		# no need for the following, as long as self.create_stop() not really interrupts the docker container
+		# else:
+		# 	self.create_progress_counter+=1
+		# 	if self.create_progress_counter > 59:
+		# 		print('Template creation took too long to prepare, abort.')
+		# 		self.create_stop()
+		# 		return
 
 	def create_stop(self, event=None):
 		self.timer.stop()
@@ -538,8 +568,13 @@ class DataScreen(Screen):
 		self.pushButton_changeOutput.clicked.connect(self.change_output)
 		self.pushButton_go.clicked.connect(self.matched_filter)
 		self.pushButton_back.clicked.connect(self.to_template_screen)
-		self.pushButton_plot_m1m2.clicked.connect(self.plot_results)
-		self.pushButton_plot_Mr.clicked.connect(self.plot_results_Mr)
+		self.pushButton_plot.clicked.connect(self.plot_results)
+		# set up Radio Buttons
+		self.ButtonGroup_Attribute = QButtonGroup()
+		self.ButtonGroup_Attribute.addButton(self.radioButton_mm, id=1)
+		self.ButtonGroup_Attribute.addButton(self.radioButton_MR, id=2)
+		self.ButtonGroup_Attribute.addButton(self.radioButton_McR, id=3)
+		self.radioButton_mm.setChecked(True)
 		# set Status
 		if self.labels: self.show_tmp_labels()
 
@@ -621,12 +656,13 @@ class DataScreen(Screen):
 				print('type(track_progress) = ', type(track_progress))  # should be <class 'numpy.ndarray'>
 				print('len(track_progress) = ', len(track_progress))    # should be 2
 				raise
-		else:
-			self.mf_progress_counter+=1
-			if self.mf_progress_counter > 59:
-				print('Matched filtering took too long to prepare, abort.')
-				self.mf_stop()
-				return
+		# no need for the following, as long as self.mf_stop() not really interrupts the docker container
+		# else:
+		# 	self.mf_progress_counter+=1
+		# 	if self.mf_progress_counter > 59:
+		# 		print('Matched filtering took too long to prepare, abort.')
+		# 		self.mf_stop()
+		# 		return
 
 	def mf_stop(self, event=None):
 		self.timer.stop()
@@ -652,19 +688,24 @@ class DataScreen(Screen):
 			print('Something went wrong while trying to execute the matched filtering. Most probably the docker engine is not running.')
 
 	@pyqtSlot()
-	def plot_results_Mr(self):
-		self.plot_results(flag_Mr=True)
-
-	@pyqtSlot()
 	def plot_results(self, flag_Mr=False):
 
 		if isinstance(self.data, handler.Data):
+
+			# check which radioButton is checked and set keyword attribute
+			attribute = 'individual'
+			if self.ButtonGroup_Attribute.checkedId() == 2:
+				attribute = 'total'
+			elif self.ButtonGroup_Attribute.checkedId() == 3:
+				attribute = 'chirp'
+			elif self.ButtonGroup_Attribute.checkedId() != 1:
+				raise ValueError('Unexpected behaviour of the ButtonGroup_Attribute: self.ButtonGroup_Attribute.checkedId() = ',self.ButtonGroup_Attribute.checkedId())
 
 			# load results
 			results_filename = self.data.savepath+'00_matched_filtering_results.dat'
 			if os.path.isfile(results_filename): 														# should I better do this in try/except style?
 				results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time', 'm1', 'm2', 'M', 'r'), 'formats': ('S5', 'f4', 'f4', 'f4', 'f4', 'f4', 'f4')})
-				self.canvas = Canvas3DPlot(results, flag_Mr)
+				self.canvas = Canvas3DPlot(results, attribute)
 				self.canvas.show()
 
 			else:

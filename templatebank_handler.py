@@ -70,26 +70,15 @@ class TemplateBank:
 			self.add_template(path, filename, flag_print=False)
 		print('Added all .hdf files in '+path+' to the template bank.')
 
-	def create_templates(self, array_masses, bankpath, basename, flag_Mr=False, freq_domain=True, time_domain=False):
+	def create_templates(self, array_masses, bankpath, basename, attribute='individual', freq_domain=True, time_domain=False):
 		'Creates templates and adds them to the templatebank.'
 		connection = ctm.MPIConnection()    # We establish a parallel connection, to create templates independently and in between other commands on connection.
 		connection.update_mpi(os.getcwd(), '/input/mpi/')   # remove or only execute in debugmode?
 		list_old_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf')]
-		connection.Create_Templates(array_masses, bankpath, basename, flag_Mr, freq_domain, time_domain)
+		connection.Create_Templates(array_masses, bankpath, basename, attribute, freq_domain, time_domain)
 		list_new_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf') and f not in list_old_templates]
 		for filename in list_new_templates: self.add_template(bankpath, filename, flag_print=False)
 		print('Created '+str(len(array_masses[0]))+' templates and added them to the template bank.')
-
-######### I have to delete this, but first see, where it gets called
-	def create_templates_Mr(self, array_Mr, bankpath, basename, freq_domain=True, time_domain=False):
-		'Calculates masses m1 and m2 from sum (M) and ratio (r) of masses and calls create_templates.'
-		# array_Mr should be a numpy array of dim 2xN.
-		M = array_Mr[0]
-		r = array_Mr[1]
-		m2 = M/(r+1)
-		m1 = r*m2
-		array_masses = np.asarray((m1,m2))
-		self.create_templates(array_masses, bankpath, basename, False, freq_domain, time_domain)
 
 
 class Template:

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
-    <height>344</height>
+    <width>1001</width>
+    <height>388</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -95,7 +95,7 @@
         <item row="2" column="2">
          <widget class="QPushButton" name="pushButton_loadData">
           <property name="text">
-           <string>Load Data</string>
+           <string>Load data</string>
           </property>
          </widget>
         </item>
@@ -249,28 +249,12 @@
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_Go">
-      <property name="leftMargin">
-       <number>10</number>
-      </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_mfHead">
       <property name="topMargin">
-       <number>10</number>
-      </property>
-      <property name="rightMargin">
-       <number>10</number>
-      </property>
-      <property name="bottomMargin">
-       <number>10</number>
+       <number>0</number>
       </property>
       <item>
-       <widget class="QPushButton" name="pushButton_back">
-        <property name="text">
-         <string>Back to Templates</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer_GoLeft">
+       <spacer name="horizontalSpacer_mfHeadLeft">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -283,34 +267,31 @@
        </spacer>
       </item>
       <item>
-       <widget class="QLabel" name="label_go">
+       <widget class="QLabel" name="label_mfHeading">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
         <property name="text">
-         <string>Start Matched Filtering:</string>
+         <string>Matched Filtering</string>
         </property>
        </widget>
       </item>
       <item>
-       <spacer name="horizontalSpacer_GoRight">
+       <spacer name="horizontalSpacer_mfHeadRight">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Fixed</enum>
-        </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>15</width>
+          <width>40</width>
           <height>20</height>
          </size>
         </property>
        </spacer>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButton_go">
-        <property name="text">
-         <string>Go!</string>
-        </property>
-       </widget>
       </item>
      </layout>
     </item>
@@ -329,9 +310,12 @@
        <number>10</number>
       </property>
       <item>
-       <spacer name="horizontalSpacer_plotLeft">
+       <spacer name="horizontalSpacer_mfLeft">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -342,14 +326,69 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_plot_Mr">
-        <property name="text">
-         <string>Plot results (M,r)</string>
+       <layout class="QGridLayout" name="gridLayout">
+        <property name="rightMargin">
+         <number>0</number>
         </property>
-       </widget>
+        <item row="2" column="4">
+         <widget class="QRadioButton" name="radioButton_MR">
+          <property name="text">
+           <string>total (M, R)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="3">
+         <widget class="QRadioButton" name="radioButton_mm">
+          <property name="text">
+           <string>individual (m1, m2)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="5">
+         <widget class="QRadioButton" name="radioButton_McR">
+          <property name="text">
+           <string>chirp (Mc, R)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QLabel" name="label_attribute">
+          <property name="text">
+           <string>mass parameters for plot:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2">
+         <spacer name="horizontalSpacer_plotvsback">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="2" column="1">
+         <widget class="QPushButton" name="pushButton_go">
+          <property name="text">
+           <string>Matched filtering</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="label_matchedfilter">
+          <property name="text">
+           <string>Start matched filtering:</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
-       <spacer name="horizontalSpacer_plotRight">
+       <spacer name="horizontalSpacer_mfPlot">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -365,11 +404,64 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_plot_m1m2">
+       <widget class="QPushButton" name="pushButton_plot">
         <property name="text">
-         <string>Plot results (m1,m2)</string>
+         <string>Plot results</string>
         </property>
        </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_mfRight">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="Line" name="line">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_Back">
+      <property name="leftMargin">
+       <number>10</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QPushButton" name="pushButton_back">
+        <property name="text">
+         <string>Back to Templates</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_back">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </item>
@@ -393,7 +485,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1000</width>
+     <width>1001</width>
      <height>22</height>
     </rect>
    </property>

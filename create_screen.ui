@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
-    <height>591</height>
+    <width>1079</width>
+    <height>593</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -28,7 +28,7 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout_Parameter">
+     <layout class="QVBoxLayout" name="verticalLayout_Attribute">
       <property name="sizeConstraint">
        <enum>QLayout::SetMaximumSize</enum>
       </property>
@@ -59,18 +59,45 @@
          <number>10</number>
         </property>
         <item>
-         <widget class="QRadioButton" name="radioButton_Mr">
-          <property name="text">
-           <string>Use total mass (M = m1+m2) and mass ratio (r = m1/m2)</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="radioButton_m1m2">
+         <widget class="QRadioButton" name="radioButton_individual">
           <property name="text">
            <string>Use individual masses (m1, m2)</string>
           </property>
          </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="radioButton_total">
+          <property name="text">
+           <string>Use total mass (M = m1+m2) and mass ratio (R = m2/m1)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="radioButton_chirp">
+          <property name="text">
+           <string>Use chirp mass Mc and mass ratio R</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_chirpmass">
+          <property name="text">
+           <string>(chirp mass?)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_attribute">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </item>
@@ -125,7 +152,7 @@
           <item row="2" column="0">
            <widget class="QLabel" name="label_Parameter1">
             <property name="text">
-             <string>total mass (M)</string>
+             <string>mass 1 (m1)</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -135,14 +162,14 @@
           <item row="3" column="4">
            <widget class="QLineEdit" name="lineEdit_Para2Stop">
             <property name="text">
-             <string>5</string>
+             <string>50</string>
             </property>
            </widget>
           </item>
           <item row="3" column="2">
            <widget class="QLineEdit" name="lineEdit_Para2Start">
             <property name="text">
-             <string>1</string>
+             <string>10</string>
             </property>
            </widget>
           </item>
@@ -279,7 +306,7 @@
           <item row="3" column="0">
            <widget class="QLabel" name="label_Parameter2">
             <property name="text">
-             <string>mass ratio (r)</string>
+             <string>mass 2 (m2)</string>
             </property>
            </widget>
           </item>
@@ -339,7 +366,7 @@
           <item row="2" column="1">
            <widget class="QLineEdit" name="lineEdit_Para2Code">
             <property name="text">
-             <string>[1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5. ]</string>
+             <string>[10., 15., 20., 25., 30., 35., 40., 45., 50. ]</string>
             </property>
            </widget>
           </item>
@@ -498,7 +525,7 @@
             <item>
              <widget class="QLabel" name="label_FilenameExt">
               <property name="text">
-               <string>+'Mr_[M]-[r]'</string>
+               <string>+'mm_[m1]-[m2]'</string>
               </property>
              </widget>
             </item>
@@ -748,7 +775,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1000</width>
+     <width>1079</width>
      <height>22</height>
     </rect>
    </property>
@@ -756,8 +783,7 @@
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <tabstops>
-  <tabstop>radioButton_Mr</tabstop>
-  <tabstop>radioButton_m1m2</tabstop>
+  <tabstop>radioButton_total</tabstop>
   <tabstop>lineEdit_Para1Start</tabstop>
   <tabstop>lineEdit_Para1Stop</tabstop>
   <tabstop>lineEdit_Para1Number</tabstop>

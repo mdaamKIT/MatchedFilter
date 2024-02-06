@@ -127,7 +127,7 @@ class MPIConnection:
 		self.matched_filter_templatebank()
 		self.run()
 
-	def Create_Templates(self, parameters, bankpath_host, basename, flag_Mr, freq_domain, time_domain):
+	def Create_Templates(self, parameters, bankpath_host, basename, attribute, freq_domain, time_domain):
 		'Creates templates for further use in matched filtering (freq_domain) or as signals (time_domain).'
 		# parameters should be a numpy array of dim 2xN; flag_Mr, freq_domain and time_domain should be boolean.
 		# Hint: a seperate MPIConnection object should be called for creating these files to not interfere with the matched filtering.
@@ -136,7 +136,7 @@ class MPIConnection:
 		parameters.tofile(bankpath_host+transfer_file)
 		self.script += 'import numpy as np; '
 		self.script += 'parameters = np.fromfile("/output/'+transfer_file+'").reshape((2,-1)); '
-		self.script += 'mpi.create_templates(parameters, "/output/", "'+basename+'", '+str(flag_Mr)+', '+str(freq_domain)+', '+str(time_domain)+'); '
+		self.script += 'mpi.create_templates(parameters, "/output/", "'+basename+'", "'+str(attribute)+'", '+str(freq_domain)+', '+str(time_domain)+'); '
 		self.run()
 
 
