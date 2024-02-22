@@ -89,7 +89,7 @@ class Canvas3DPlot(QMainWindow):
 			z[index] = results[index][1]       # match
 
 		# plot
-		self.ax = self.figure.subplots(subplot_kw=dict(projection='3d')) # subplot_kw=dict(projection='3d')
+		self.ax = self.figure.subplots(subplot_kw=dict(projection='3d'))
 		if attribute == 'total':
 			M = x+y
 			r = y/x
@@ -149,10 +149,13 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 		self.labels[0] = new_label
 
 	def show_tmp_labels(self):
-		self.label_TempLine1.setText(self.labels[0])
-		self.label_TempLine2.setText(self.labels[1])
-		self.label_TempLine3.setText(self.labels[2])
-		self.label_TempLine4.setText(self.labels[3])
+		try:
+			self.label_TempLine1.setText(self.labels[0])
+			self.label_TempLine2.setText(self.labels[1])
+			self.label_TempLine3.setText(self.labels[2])
+			self.label_TempLine4.setText(self.labels[3])
+		except:
+			raise
 		self.show()
 
 
@@ -392,10 +395,10 @@ class CreateScreen(Screen):
 		msg = QMessageBox()
 		msg.setIcon(QMessageBox.Information)
 		msg.setText("Chirp Mass")
-		msg.setInformativeText('The quantity chirp mass is the mass parameter that best describes the gravitational wave in most cases. '+
+		msg.setInformativeText('The quantity chirp mass is a good mass parameter to describe the gravitational wave in most cases. '+
 			'It is defined by: \n\n'+
 			'Mc = [(m1*m2)^3/(m1+m2)]^(1/5).\n\n'+
-			'Analyzing your signals you will probably find that the best matching templates often share the same chirp mass.')
+			'Analyzing your signals, you will probably find that the best matching templates often share the same chirp mass.')
 		msg.setWindowTitle("Information: chirp mass")
 		msg.exec_()
 
@@ -490,7 +493,7 @@ class CreateScreen(Screen):
 		self.progress_dialog.setBar(self.progress_bar)
 		self.progress_dialog.setWindowTitle("Create templates")
 		self.progress_dialog.setWindowModality(Qt.WindowModal)
-		self.progress_dialog.canceled.connect(self.create_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
+		# self.progress_dialog.canceled.connect(self.create_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
 
 		# create worker Thread
 		self.worker = CreateTemplatesWorker(self.templatebank, array, self.path, basename, self.attribute, freq_domain, time_domain)
@@ -513,11 +516,14 @@ class CreateScreen(Screen):
 				if track_progress[0]==track_progress[1]:
 					self.timer.stop()
 					self.create_progress_counter = 0
-			except IndexError:                                      # trying to debug an irregularily appearing IndexError when track_progress in the middle of the process seems to stop being an array with more than one entry.
-				print('track_progress = ', track_progress)              # should be an array of two integers; first smaller than second
-				print('type(track_progress) = ', type(track_progress))  # should be <class 'numpy.ndarray'>
-				print('len(track_progress) = ', len(track_progress))    # should be 2
+			except IndexError:
 				raise
+				# https://stackoverflow.com/questions/65755434/given-error-even-when-text-in-file-userwarning-loadtxt-empty-input-file-sto
+				# This really seems to arise, when the matchedfilter wants to read the progress file at the same time the container is writing to it.
+				# Thus it just happens sometimes by chance, when the timing is unlucky.
+				# I guess, I can keep ignoring this Error.
+				# That seems to be the better solution than trying to build a complicated workaround, since there is no real damage in ignoring.
+				# Only sometimes the progress bar skips one update.
 		# no need for the following, as long as self.create_stop() not really interrupts the docker container
 		# else:
 		# 	self.create_progress_counter+=1
@@ -538,6 +544,7 @@ class CreateScreen(Screen):
 				os.remove(self.path+'00_progress_create.dat')
 			except PermissionError:
 				print('No permission to remove 00_progress_mf.dat. Moving on.')
+		self.update_tmp_labels(self.path+' (new templates)')
 
 	def create_exception(self):
 			msg = QMessageBox()
@@ -618,7 +625,7 @@ class DataScreen(Screen):
 			self.progress_dialog.setBar(self.progress_bar)
 			self.progress_dialog.setWindowTitle("Matched filtering")
 			self.progress_dialog.setWindowModality(Qt.WindowModal)
-			self.progress_dialog.canceled.connect(self.mf_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
+			# self.progress_dialog.canceled.connect(self.mf_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
 
 			# create worker Thread
 			self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.config.get('main', 'os'), self.config.getboolean('main', 'debugmode'))
@@ -651,11 +658,15 @@ class DataScreen(Screen):
 				if track_progress[0]==track_progress[1]:
 					self.timer.stop()
 					self.mf_progress_counter = 0
-			except IndexError:                                      # trying to debug an irregularily appearing IndexError when track_progress in the middle of the process seems to stop being an array with more than one entry.
-				print('track_progress = ', track_progress)              # should be an array of two integers; first smaller than second
-				print('type(track_progress) = ', type(track_progress))  # should be <class 'numpy.ndarray'>
-				print('len(track_progress) = ', len(track_progress))    # should be 2
+			except IndexError:
 				raise
+				# https://stackoverflow.com/questions/65755434/given-error-even-when-text-in-file-userwarning-loadtxt-empty-input-file-sto
+				# This really seems to arise, when the matchedfilter wants to read the progress file at the same time the container is writing to it.
+				# Thus it just happens sometimes by chance, when the timing is unlucky.
+				# I guess, I can keep ignoring this Error.
+				# That seems to be the better solution than trying to build a complicated workaround, since there is no real damage in ignoring.
+				# Only sometimes the progress bar skips one update.
+
 		# no need for the following, as long as self.mf_stop() not really interrupts the docker container
 		# else:
 		# 	self.mf_progress_counter+=1

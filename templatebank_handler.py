@@ -76,10 +76,10 @@ class TemplateBank:
 		connection.update_mpi(os.getcwd(), '/input/mpi/')   # remove or only execute in debugmode?
 		list_old_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf')]
 		connection.Create_Templates(array_masses, bankpath, basename, attribute, freq_domain, time_domain)
-		list_new_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf') and f not in list_old_templates]
-		for filename in list_new_templates: self.add_template(bankpath, filename, flag_print=False)
-		print('Created '+str(len(array_masses[0]))+' templates and added them to the template bank.')
-
+		if freq_domain:
+			list_new_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf') and f not in list_old_templates]
+			for filename in list_new_templates: self.add_template(bankpath, filename, flag_print=False)
+			print('Added '+str(len(list_new_templates))+' new templates to the template bank.')
 
 class Template:
 	def __init__(self, bankpath, filename):

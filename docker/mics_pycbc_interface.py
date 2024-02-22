@@ -214,13 +214,13 @@ def make_template( m1, m2, apx='SEOBNRv4', samplerate=4096, duration=1.0, flag_s
 	spin = 0.9
 	f_low = 30         # I could use something above 50Hz to exclude line frequency transmitted by the amplifier.
 
-	# create and reshape time-domain template
+	# create time-domain template and reshape to exactly fit duration
 	hp, _ = get_td_waveform(approximant=apx,
 	                             mass1=m1,
 	                             mass2=m2,
 	                             spin1z=spin,
 	                             delta_t=1.0/samplerate,
-	                             f_lower=f_low)
+	                             f_lower=f_low)             # (we only use plus polarization)
 	durdiff = hp.duration-duration
 	if durdiff>0:
 		hp=hp.crop(durdiff,0)
@@ -301,9 +301,17 @@ def create_templates(parameters, savepath, basename, attribute, freq_domain, tim
 	np.savetxt(savepath+'00_progress_create.dat', [0, N+1], fmt=['%i'])
 	masses = parameters
 	parameter_name = 'mm'
-	if attribute == 'total':
+	if attribute == 'individual':
+		for index in np.arange(N):
+			if masses[0][index]<masses[1][index]:
+				m1,m2 = masses[0][index], masses[1][index]
+				masses[0][index], masses[1][index] = m2,m1
+	elif attribute == 'total':
 		M = parameters[0]
 		r = parameters[1]
+		for index in np.arange(N):
+			if r[index]>1:
+				r[index] = 1./r[index]
 		m1 = M/(r+1)
 		m2 = r*m1
 		masses = np.asarray((m1,m2))
@@ -311,12 +319,15 @@ def create_templates(parameters, savepath, basename, attribute, freq_domain, tim
 	elif attribute == 'chirp':
 		Mc = parameters[0]
 		r = parameters[1]
+		for index in np.arange(N):
+			if r[index]>1:
+				r[index] = 1./r[index]
 		m2 = Mc*np.power(np.power(r,-2)+np.power(r,-3), 0.2)
-		m1 = r*m2
+		m1 = m2/r
 		masses = np.asarray((m1,m2))
 		parameter_name = 'McR'
-	elif attribute != 'individual':
-		raise ValueError('Keyword attribute should be individual, total or chrip but is ',attribute)
+	else:
+		raise ValueError('Keyword attribute should be individual, total or chrip but is '+str(attribute))
 
 
 	# create names and make distinctions between names if necessary
@@ -326,35 +337,41 @@ def create_templates(parameters, savepath, basename, attribute, freq_domain, tim
 		if attribute == 'individual':
 			name_1 = str(round(parameters[1][index]))
 		else:
-			name_1 = str(round(parameters[1][index]*1000))
+			name_1 = str(int(np.round(1000*parameters[1][index]))).zfill(4) # str(round(parameters[1][index]*1000))
 		list_of_names[index] = basename+parameter_name+'_'+name_0+'-'+name_1
 	D = defaultdict(list)
 	for i,name in enumerate(list_of_names):
 		D[name].append(i)
-	list_appendices = []
+	list_of_real_duplicates = []
 	for name in D:
 		duplicates = D[name][1:]
 		for number,name_index in enumerate(duplicates):
+			# add an appendix to create a unique name
 			list_of_names[name_index] = list_of_names[name_index]+'_'+str(number+2)
+			# identify, if not only name, but also parameters are duplicates
+			for previous_index in D[name][:number+1]:
+				if parameters[0][name_index]==parameters[0][previous_index] and parameters[1][name_index]==parameters[1][previous_index]:
+					list_of_real_duplicates.append(name_index)
 
 	for index,m1 in enumerate(masses[0]):
-		np.savetxt(savepath+'00_progress_create.dat', [index+1, N+1], fmt=['%i'])
-		m2 = masses[1][index]
-		name = list_of_names[index]
-		try:
-			strain_freq, strain_time = make_template_any_apx(m1,m2, errorname=name)
-			if time_domain: strain_time.save_to_wav(savepath+name+'.wav')
-			if freq_domain: save_FrequencySeries(strain_freq, savepath+name+'.hdf', m1, m2)
-		except ValueError:
-			errorstring = name+' ('+str(datetime.now())+'): There was a ValueError; probably a .hdf-file of that name already existed.\n'
-			print(errorstring)
-			with open(savepath+'errors.txt', 'a') as errorfile:
-				errorfile.write(errorstring)
-		except:
-			errorstring = name+' ('+str(datetime.now())+'): Unexpected Error with masses '+str(m1)+', '+str(m2)+'.\n'
-			print(errorstring)
-			with open(savepath+'errors.txt', 'a') as errorfile:
-				errorfile.write(errorstring)
+		if not index in list_of_real_duplicates:
+			np.savetxt(savepath+'00_progress_create.dat', [index+1, N+1], fmt=['%i'])
+			m2 = masses[1][index]
+			name = list_of_names[index]
+			try:
+				strain_freq, strain_time = make_template_any_apx(m1,m2, errorname=name)
+				if time_domain: strain_time.save_to_wav(savepath+name+'.wav')
+				if freq_domain: save_FrequencySeries(strain_freq, savepath+name+'.hdf', m1, m2)
+			except ValueError:
+				errorstring = name+' ('+str(datetime.now())+'): There was a ValueError; probably a .hdf-file of that name already existed.\n'
+				print(errorstring)
+				with open(savepath+'errors.txt', 'a') as errorfile:
+					errorfile.write(errorstring)
+			except:
+				errorstring = name+' ('+str(datetime.now())+'): Unexpected Error with masses '+str(m1)+', '+str(m2)+'.\n'
+				print(errorstring)
+				with open(savepath+'errors.txt', 'a') as errorfile:
+					errorfile.write(errorstring)
 	np.savetxt(savepath+'00_progress_create.dat', [N+1, N+1], fmt=['%i'])
 
 
