@@ -212,20 +212,20 @@ def make_template( m1, m2, apx='SEOBNRv4', samplerate=4096, duration=1.0, flag_s
 
 	# some hard-coded settings
 	spin = 0.9
-	f_low = 30         # I could use something above 50Hz to exclude line frequency transmitted by the amplifier.
+	f_low = 30         # I could use something above 50Hz to exclude line frequency transmitted by the amplifier. (But in my setup, 50 Hz line freq is not an issue.)
 
-	# create time-domain template and reshape to exactly fit duration
+	# create time-domain template and reshape to exactly fit duration but only at max half full. (At max half full, to avoid wraparound-problems in merger-time determination.)
 	hp, _ = get_td_waveform(approximant=apx,
 	                             mass1=m1,
 	                             mass2=m2,
 	                             spin1z=spin,
 	                             delta_t=1.0/samplerate,
 	                             f_lower=f_low)             # (we only use plus polarization)
-	durdiff = hp.duration-duration
+	durdiff = hp.duration-0.5*duration
 	if durdiff>0:
 		hp=hp.crop(durdiff,0)
-	else:
-		hp.prepend_zeros(int(-durdiff*samplerate))
+	durdiff = duration-hp.duration
+	hp.prepend_zeros(int(durdiff*samplerate))
 
 	if flag_show:
 		plt.plot(hp.sample_times, hp)
@@ -243,13 +243,13 @@ def make_template( m1, m2, apx='SEOBNRv4', samplerate=4096, duration=1.0, flag_s
 def make_template_any_apx( m1, m2, samplerate=4096, duration=1.0, flag_show=False, errorname='nameless_template' ):
 	'Create a template. Try all allowed approximants (apx), if default apx fails.'
 	try:
-		hp_freq, hp = make_template(m1, m2, apx=APX_DEFAULT)
+		hp_freq, hp = make_template(m1, m2, apx=APX_DEFAULT, samplerate=samplerate, duration=duration, flag_show=flag_show)
 		return hp_freq, hp
 	except:
 		print('Creating template with default approximant ('+APX_DEFAULT+') failed. Trying other ones.')
 		for apx in APX_ALLOWED:
 			try:
-				hp_freq, hp = make_template(m1,m2,apx=apx)
+				hp_freq, hp = make_template(m1,m2,apx=apx, samplerate=samplerate, duration=duration, flag_show=flag_show)
 				print('Creating template with other approximant ('+apx+') worked.')
 				return hp_freq, hp
 				break
@@ -390,6 +390,7 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 	matches = np.zeros(num)
 	indices = np.zeros(num)
 	times = np.zeros(num)
+	phis = np.zeros(num)
 	count_of_max = 0
 	detail_match = 0.
 	if plot_snr:
@@ -423,6 +424,7 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 		indices[count] = index1
 		end_time = get_end_time(segment)
 		times[count] = end_time.total_seconds() - segment.duration + index1/segment.sample_rate - offset
+		phis[count] = np.angle(snr[int(round(index1))])
 
 		if match1 > detail_match:
 			count_of_max = count
@@ -462,7 +464,7 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 		plt.close() 
 
 	### get maximum values over all segments
-	Maxmatch = [matches[count_of_max],times[count_of_max]]
+	Maxmatch = [matches[count_of_max],times[count_of_max],phis[count_of_max]]
 
 	### try to plot template and data together
 	# settings for plot
@@ -471,7 +473,8 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 	# create arrays for plot 
 	plot_data = data.segments[count_of_max]/np.sqrt(sigmasq(data.segments[count_of_max]))   # normed data segment.
 	plot_time = plot_data.sample_times
-	tmp_time = tmp.to_timeseries()
+	tmp_shift = np.exp(1j*Maxmatch[2])*tmp
+	tmp_time = tmp_shift.to_timeseries()
 	tmp_time = matches[count_of_max]/np.sqrt(sigmasq(tmp_time))*tmp_time
 	index1 = int(indices[count_of_max])
 	plot_tmp = np.concatenate( (np.asarray(tmp_time[(lenseg-index1):]), np.zeros(lenseg-index1)) )
@@ -480,7 +483,7 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 	start = max( int(round(index1-before*plot_data.sample_rate))-offset_ind, 0)
 	end = min( int(round(index1+after*plot_data.sample_rate))-offset_ind, lenseg)
 	plt.plot(plot_time[start:end], plot_data[start:end], color='tab:blue', linestyle='-', marker=',')
-	plt.plot(plot_time[start:end], plot_tmp[start:end], color='tab:orange', linestyle=':', marker=',', alpha=1.0) 
+	plt.plot(plot_time[start:end], plot_tmp[start:end], color='tab:red', linestyle=':', marker=',', linewidth=2., alpha=1.0) 
 	plt.legend(['data', 'template'])
 	plt.xlabel('time (s)')
 	plt.ylabel('amplitude (a.u.)')
@@ -489,7 +492,7 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 	if data.flag_show: plt.show()
 	plt.close() 
 
-	return matches, indices, times, Maxmatch
+	return matches, indices, times, phis, Maxmatch
 
 
 def matched_filter_templatebank(data, templatebank):
@@ -505,7 +508,7 @@ def matched_filter_templatebank(data, templatebank):
 	# calculate output
 	for index,template in enumerate(templatebank.list_of_templates):
 		np.savetxt(data.savepath+'00_progress_mf.dat', [index+1, num+2], fmt=['%i'])
-		_,_,_,Maxmatch = matched_filter_single(data, template)
+		_,_,_,_,Maxmatch = matched_filter_single(data, template)
 		results[index] = index, Maxmatch[0], Maxmatch[1], template.m1, template.m2, template.m1+template.m2, template.m1/template.m2
 		names.append(template.shortname)
 		writedata[index] = template.shortname, Maxmatch[0], Maxmatch[1], template.m1, template.m2, template.m1+template.m2, template.m1/template.m2
