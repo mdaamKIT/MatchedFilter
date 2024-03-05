@@ -464,21 +464,40 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 		plt.close() 
 
 	### get maximum values over all segments
-	Maxmatch = [matches[count_of_max],times[count_of_max],phis[count_of_max]]
+	Maxmatch = [matches[count_of_max], times[count_of_max], phis[count_of_max], count_of_max, indices[count_of_max]]
 
 	### try to plot template and data together
+	# Plotting template and data together ('merger plot') is now done by calling the plot_merger function. (since v0.2)
+	# Actually calling plot_merger is swapped out to the matched_filter_templatebank function, 
+	# to save disc space by calling it only for the best matching templates.
+	# plot_merger(data, template, Maxmatch)
+
+	return matches, indices, times, phis, Maxmatch
+
+
+def plot_merger(data, template, Maxmatch):
+	'Plot data and template together at the time of best match.'
+
+	### I should check, if data and template are respective objects.
+	### Maybe Maxmatch should also be an object. (Maybe not, since I don't want it to persist in the memory.)
+
+	### settings for plot should somehow come from the config-file
+
+	tmp = template.frequency_series		# readability
 	# settings for plot
 	before = 0.1   # start plot *before* merger (in s)
 	after = 0.05   # end        * after* merger (in s)
 	# create arrays for plot 
-	plot_data = data.segments[count_of_max]/np.sqrt(sigmasq(data.segments[count_of_max]))   # normed data segment.
+	plot_data = data.segments[Maxmatch[3]]/np.sqrt(sigmasq(data.segments[Maxmatch[3]]))   # normed data segment.
 	plot_time = plot_data.sample_times
 	tmp_shift = np.exp(1j*Maxmatch[2])*tmp
 	tmp_time = tmp_shift.to_timeseries()
-	tmp_time = matches[count_of_max]/np.sqrt(sigmasq(tmp_time))*tmp_time
-	index1 = int(indices[count_of_max])
+	tmp_time = Maxmatch[0]/np.sqrt(sigmasq(tmp_time))*tmp_time
+	index1 = int(Maxmatch[4])
+	lenseg = len(data.segments[0])
 	plot_tmp = np.concatenate( (np.asarray(tmp_time[(lenseg-index1):]), np.zeros(lenseg-index1)) )
 	# plot
+	offset = get_end_time(tmp.to_timeseries()).total_seconds() 	# offset of template end_time vs merger-time; in template t=0 is at merger.
 	offset_ind = int(round(offset*plot_data.sample_rate))
 	start = max( int(round(index1-before*plot_data.sample_rate))-offset_ind, 0)
 	end = min( int(round(index1+after*plot_data.sample_rate))-offset_ind, lenseg)
@@ -487,12 +506,10 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 	plt.legend(['data', 'template'])
 	plt.xlabel('time (s)')
 	plt.ylabel('amplitude (a.u.)')
-	plt.title(data.shortname+' and '+template.shortname+'; t = '+str(round(times[count_of_max],3))+' s, match = '+str(round(matches[count_of_max],2)))
+	plt.title(data.shortname+' and '+template.shortname+'; t = '+str(round(Maxmatch[1],3))+' s, match = '+str(round(Maxmatch[0],2)))
 	plt.savefig(data.savepath+'plot_'+data.shortname+'_'+template.shortname+'.png')
 	if data.flag_show: plt.show()
 	plt.close() 
-
-	return matches, indices, times, phis, Maxmatch
 
 
 def matched_filter_templatebank(data, templatebank):
@@ -503,12 +520,14 @@ def matched_filter_templatebank(data, templatebank):
 	dtype = [('templatename', (np.str_,40)), ('maxmatch', np.float64), ('maxtime', np.float64), ('m1', np.float64), ('m2', np.float64), ('M', np.float64), ('r', np.float64)]
 	results = np.zeros((num,7))
 	names = []
+	maxmatches_all = []
 	writedata = np.array(np.arange(num), dtype=dtype)
 	sortdata = np.array(np.arange(num), dtype=dtype)
 	# calculate output
 	for index,template in enumerate(templatebank.list_of_templates):
 		np.savetxt(data.savepath+'00_progress_mf.dat', [index+1, num+2], fmt=['%i'])
 		_,_,_,_,Maxmatch = matched_filter_single(data, template)
+		maxmatches_all.append(Maxmatch)
 		results[index] = index, Maxmatch[0], Maxmatch[1], template.m1, template.m2, template.m1+template.m2, template.m1/template.m2
 		names.append(template.shortname)
 		writedata[index] = template.shortname, Maxmatch[0], Maxmatch[1], template.m1, template.m2, template.m1+template.m2, template.m1/template.m2
@@ -517,6 +536,11 @@ def matched_filter_templatebank(data, templatebank):
 	results_sorted = results[results[:,1].argsort()[::-1]]
 	for index in range(num):
 		sortdata[index] = names[int(results_sorted[index,0])], results_sorted[index,1], results_sorted[index,2], results_sorted[index,3], results_sorted[index,4], results_sorted[index,5], results_sorted[index,6]
+		# create a merger plot for best matching templates
+		if index < 5:  # I refrain from updating the progress bar while plotting even if it takes a noticeable amount of time. 
+			plot_merger(data, templatebank.list_of_templates[int(results_sorted[index,0])], maxmatches_all[int(results_sorted[index,0])])
+		if index < 15 and results_sorted[index,1] > 0.55:
+			plot_merger(data, templatebank.list_of_templates[int(results_sorted[index,0])], maxmatches_all[int(results_sorted[index,0])])
 	# save results
 	header = 'Matched Filtering results of '+data.shortname+': \n'
 	header += 'templatename, match, time of match, template-m1, template-m2, template-M, template-r'
