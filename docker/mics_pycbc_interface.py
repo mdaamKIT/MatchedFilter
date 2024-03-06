@@ -11,6 +11,7 @@ import h5py
 import numpy as np
 from collections import defaultdict
 from datetime import datetime
+from configparser import ConfigParser
 
 ### About
 #   -----
@@ -21,7 +22,9 @@ from datetime import datetime
 ### Global definitions
 #   ------------------
 
-debugmode = False
+config = ConfigParser()
+config.read('config.ini')
+debugmode = config.getboolean('main', 'debugmode')
 
 # approximants for template creation
 APX_DEFAULT = 'SEOBNRv4'   # By now I just randomly picked one that makes nice waveforms with inspiral, merger and ringdown.
@@ -47,14 +50,6 @@ class TemplateBank:
 	def add_template(self, bankpath, filename):
 		'Add a single file to the TemplateBank.'
 		self.list_of_templates.append(Template(bankpath, filename))
-		if debugmode: print('Added ', self.list_of_templates[-1].shortname, ' to the TemplateBank.')
-	
-	# def add_directory(self, path):
-	# 	'Add all .hdf-files in path to the TemplateBank.'
-	# 	listofnames = [f for f in os.listdir(path) if f.endswith('.hdf')]
-	# 	listofnames.sort()
-	# 	for filename in listofnames:
-	# 		self.add_template(path, filename)
 
 class Template:
 	def __init__(self, path, filename):
@@ -466,11 +461,11 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 	### get maximum values over all segments
 	Maxmatch = [matches[count_of_max], times[count_of_max], phis[count_of_max], count_of_max, indices[count_of_max]]
 
-	### try to plot template and data together
+	### plot template and data together
 	# Plotting template and data together ('merger plot') is now done by calling the plot_merger function. (since v0.2)
-	# Actually calling plot_merger is swapped out to the matched_filter_templatebank function, 
-	# to save disc space by calling it only for the best matching templates.
-	# plot_merger(data, template, Maxmatch)
+	# Actually calling plot_merger is swapped out to the matched_filter_templatebank function, to save disc space by calling it only for the best matching templates.
+	# In case all merger plots should be created, it is still executed here, to keep progress bar more meaningful.
+	if config.getboolean('mergerplots', 'create_all'): plot_merger(data, template, Maxmatch)
 
 	return matches, indices, times, phis, Maxmatch
 
@@ -485,8 +480,8 @@ def plot_merger(data, template, Maxmatch):
 
 	tmp = template.frequency_series		# readability
 	# settings for plot
-	before = 0.1   # start plot *before* merger (in s)
-	after = 0.05   # end        * after* merger (in s)
+	before = config.getfloat('mergerplots', 'time_before_merger')   # start plot *before* merger (in s)
+	after = config.getfloat('mergerplots', 'time_before_merger')    # end        * after* merger (in s)
 	# create arrays for plot 
 	plot_data = data.segments[Maxmatch[3]]/np.sqrt(sigmasq(data.segments[Maxmatch[3]]))   # normed data segment.
 	plot_time = plot_data.sample_times
@@ -537,10 +532,11 @@ def matched_filter_templatebank(data, templatebank):
 	for index in range(num):
 		sortdata[index] = names[int(results_sorted[index,0])], results_sorted[index,1], results_sorted[index,2], results_sorted[index,3], results_sorted[index,4], results_sorted[index,5], results_sorted[index,6]
 		# create a merger plot for best matching templates
-		if index < 5:  # I refrain from updating the progress bar while plotting even if it takes a noticeable amount of time. 
-			plot_merger(data, templatebank.list_of_templates[int(results_sorted[index,0])], maxmatches_all[int(results_sorted[index,0])])
-		if index < 15 and results_sorted[index,1] > 0.55:
-			plot_merger(data, templatebank.list_of_templates[int(results_sorted[index,0])], maxmatches_all[int(results_sorted[index,0])])
+		if not config.getboolean('mergerplots', 'create_all'):
+			if index < config.getint('mergerplots', 'min_number'):  # I refrain from updating the progress bar while plotting even if it takes a noticeable amount of time. 
+				plot_merger(data, templatebank.list_of_templates[int(results_sorted[index,0])], maxmatches_all[int(results_sorted[index,0])])
+			if index < config.getint('mergerplots', 'max_number') and results_sorted[index,1] > config.getfloat('mergerplots', 'match_threshold'):
+				plot_merger(data, templatebank.list_of_templates[int(results_sorted[index,0])], maxmatches_all[int(results_sorted[index,0])])
 	# save results
 	header = 'Matched Filtering results of '+data.shortname+': \n'
 	header += 'templatename, match, time of match, template-m1, template-m2, template-M, template-r'

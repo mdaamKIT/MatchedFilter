@@ -77,3 +77,10 @@ The software enables you
 
 I hope the use of the software is mostly self-explanatory. A more detailed user manual may be shipped out with version 1.0. If you already know the software by now, you are likely to have heard of it by me personally and you should already have a coarse idea of how it is used.
 The software calculates the normalized 'match' quantity during matched filtering. This is 1.0 if the analyzed data are identical to the template and most of the times around 0.1 to 0.2 if the signals are randomly uncorrelated. The results of the analysis are by default stored to files in a folder of the same name as the analyzed data. A 3D-plot of the match versus the parameters (masses) of the templates can be created from the software.
+
+
+## Advanced user manual
+
+### notes
+
+1. In the config.ini file, you can edit settings for which mergerplots to create. (Describe, how it works.)

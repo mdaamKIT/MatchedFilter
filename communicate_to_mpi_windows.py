@@ -23,6 +23,7 @@
 #       Now you could start again, configuring the container.
 
 from configparser import ConfigParser
+from os import getcwd
 
 config = ConfigParser()
 config.read('config.ini')
@@ -37,6 +38,8 @@ class MPIConnection:
 		self.volumes = {}     # {output_host: {'bind': output_container, 'mode': 'rw'}}
 		self.commands = []
 		self.script = '''python -c 'import mics_pycbc_interface as mpi; '''
+		self.add_read_dir(getcwd(), '/input/mf/')
+		self.commands.append('cp /input/mf/config.ini /')
 		
 	def add_output_dir(self, output_host, output_container):
 		'Bind-mounts a directory from host to the container to (read and) write files into.'
@@ -71,17 +74,6 @@ class MPIConnection:
 		for template in templatebank.list_of_templates:
 			self.script += 'templatebank.add_template("'+self.volumes[template.bankpath]['bind']+'","'+template.filename+'"); '
 
-	### !!!!! the following two methods could be integrated in the methods below (Matched_Filter_single/templatebank)
-
-	def matched_filter_single(self):
-		'Perform Matched Filtering inside the container.'
-		self.script += 'mpi.matched_filter_single( data, template ); '
-
-	def matched_filter_templatebank(self):
-		self.script += 'mpi.matched_filter_templatebank( data, templatebank ); '
-
-
-
 	### running and stopping the container
 
 	def run(self):
@@ -94,8 +86,8 @@ class MPIConnection:
 		for command in self.commands:
 			container.exec_run(command)
 		self.script += ''' ' '''
-		std_stuff = container.exec_run(self.script, demux=True)
-		if debugmode: print(std_stuff)
+		std = container.exec_run(self.script, demux=True)
+		if debugmode: print(std)
 		# stop container and cleanup (prepare for restart)
 		container.stop()
 		self.client.containers.prune()
@@ -103,10 +95,9 @@ class MPIConnection:
 		self.commands = []
 		self.script = '''python -c 'import mics_pycbc_interface as mpi; '''
 
-	def update_mpi(self, path_host, path_container):
+	def update_mpi(self):
 		'Update mpi without building a new docker image.'
-		self.add_read_dir(path_host, path_container)
-		self.commands.append('cp '+path_container+'mics_pycbc_interface.py /')
+		self.commands.append('cp /input/mf/mics_pycbc_interface.py /')
 
 
 
@@ -117,14 +108,14 @@ class MPIConnection:
 		'Composing a Matched Filtering with a single template.'
 		self.transfer_data(data)
 		self.transfer_template(template)
-		self.matched_filter_single()
+		self.script += 'mpi.matched_filter_single( data, template ); '
 		self.run()
 
 	def Matched_Filter_templatebank(self, data, templatebank):
 		'Composing a Matched Filtering with every template in the templatebank.'
 		self.transfer_data(data)
 		self.transfer_templatebank(templatebank)
-		self.matched_filter_templatebank()
+		self.script += 'mpi.matched_filter_templatebank( data, templatebank ); '
 		self.run()
 
 	def Create_Templates(self, parameters, bankpath_host, basename, attribute, freq_domain, time_domain):

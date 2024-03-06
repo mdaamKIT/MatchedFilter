@@ -73,7 +73,7 @@ class TemplateBank:
 	def create_templates(self, array_masses, bankpath, basename, attribute='individual', freq_domain=True, time_domain=False):
 		'Creates templates and adds them to the templatebank.'
 		connection = ctm.MPIConnection()    # We establish a parallel connection, to create templates independently and in between other commands on connection.
-		connection.update_mpi(os.getcwd(), '/input/mpi/')   # remove or only execute in debugmode?
+		connection.update_mpi()   # remove or only execute in debugmode?
 		list_old_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf')]
 		connection.Create_Templates(array_masses, bankpath, basename, attribute, freq_domain, time_domain)
 		if freq_domain:
@@ -105,7 +105,7 @@ class Data:
 			raise TypeError('templatebank has to be an instance of TemplateBank class but has type: ' + str(type(templatebank)))
 		if OS == 'windows':
 			connection = ctm.MPIConnection()
-			if debugmode: connection.update_mpi(os.getcwd(), '/input/mpi/')
+			if debugmode: connection.update_mpi()
 			connection.Matched_Filter_templatebank(self, templatebank)
 		else:
 			print('Error, linux style without docker not yet supported. Open config.ini, go to main and change os to windows.')
