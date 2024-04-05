@@ -783,7 +783,10 @@
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <tabstops>
+  <tabstop>radioButton_individual</tabstop>
   <tabstop>radioButton_total</tabstop>
+  <tabstop>radioButton_chirp</tabstop>
+  <tabstop>pushButton_chirpmass</tabstop>
   <tabstop>lineEdit_Para1Start</tabstop>
   <tabstop>lineEdit_Para1Stop</tabstop>
   <tabstop>lineEdit_Para1Number</tabstop>
@@ -797,9 +800,9 @@
   <tabstop>radioButton_AllOn</tabstop>
   <tabstop>radioButton_AllOff</tabstop>
   <tabstop>lineEdit_FilenameBase</tabstop>
+  <tabstop>pushButton_changeOutput</tabstop>
   <tabstop>checkBox_freq</tabstop>
   <tabstop>checkBox_time</tabstop>
-  <tabstop>pushButton_changeOutput</tabstop>
   <tabstop>pushButton_create</tabstop>
   <tabstop>pushButton_back</tabstop>
  </tabstops>

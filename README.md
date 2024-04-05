@@ -84,3 +84,11 @@ The software calculates the normalized 'match' quantity during matched filtering
 ### notes
 
 1. In the config.ini file, you can edit settings for which mergerplots to create. (Describe, how it works.)
+2. MatchedFilter creates templates only with masses from 0.5 to 100 solar masses. Requesting other masses should not break the program but templates will simply not be tried to created. (There were some divide by zero issues in the matched filter with templates of low masses - maybe they were arrays full of zeros? I did not check closely since they are not physically relevant anyway.) (Disabled at the moment - see line 358 in mpi)
+
+
+## Notes for developers
+
+### Conventions
+
+Names of directories end with a '/' in the code. This way, I can concatenate filenames through the simple concatenation of their strings (fullname = path+filename) instead of calling functions. (E.g. fullname = os.path.join(path, filename) )

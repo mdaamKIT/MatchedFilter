@@ -84,9 +84,9 @@ class Canvas3DPlot(QMainWindow):
 		y = np.zeros(L)
 		z = np.zeros(L)
 		for index in range(L):
-			x[index] = int(results[index][3])  # m1
-			y[index] = int(results[index][4])  # m2
-			z[index] = results[index][1]       # match
+			x[index] = results[index][3]    # m1
+			y[index] = results[index][4]    # m2
+			z[index] = results[index][1]    # match
 
 		# plot
 		self.ax = self.figure.subplots(subplot_kw=dict(projection='3d'))
@@ -260,6 +260,9 @@ class TemplateScreen(Screen):
 			self.templatebank.add_directory(path)
 			self.update_tmp_labels(path)
 			self.show_tmp_labels()
+			self.config.set('main', 'bankpath', os.path.dirname(os.path.normpath(path))+'/')
+			with open('config.ini', 'w') as f:
+				self.config.write(f)
 		return
 
 	@pyqtSlot()
@@ -406,7 +409,7 @@ class CreateScreen(Screen):
 	def change_output(self):
 		self.path = self.getDirectoryDialog('Choose the new output directory.', self.path)
 		if self.path:
-			self.label_path.setText(self.make_label(self.path,120,0))
+			self.label_path.setText(self.make_label(self.path,100,0))
 			self.show()
 
 	@pyqtSlot()
@@ -618,25 +621,39 @@ class DataScreen(Screen):
 			# https://doc.qt.io/qtforpython-6/PySide6/QtCore/QThread.html#PySide6.QtCore.PySide6.QtCore.QThread.quit
 			# https://www.programcreek.com/python/example/108099/PyQt5.QtWidgets.QProgressDialog
 
-			# set up the progress_dialog
-			self.progress_dialog = QProgressDialog("Preparing matched filtering,\n please wait...", None, 0, len(self.templatebank.list_of_templates)+2, self) # None instead of "Cancel" as CancelButtonText removes the cancel-button.
-			self.progress_bar = QProgressBar(self.progress_dialog)
-			self.progress_bar.setMaximum(len(self.templatebank.list_of_templates)+2)
-			self.progress_dialog.setBar(self.progress_bar)
-			self.progress_dialog.setWindowTitle("Matched filtering")
-			self.progress_dialog.setWindowModality(Qt.WindowModal)
-			# self.progress_dialog.canceled.connect(self.mf_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
+			do_mf = True
+			if os.path.isfile(self.data.savepath+'00_matched_filtering_results.dat'):
+				do_mf = False
+				answer = QMessageBox.question(
+					self,
+					"Overwrite existing results?", 
+					'The chosen output directory already contains the results of a previous matched filtering.\n\nDo you want to continue and overwrite the existing results?',
+					QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+					)
 
-			# create worker Thread
-			self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.config.get('main', 'os'), self.config.getboolean('main', 'debugmode'))
-			self.worker.exceptionSignal.connect(self.mf_exception)
-			self.worker.finished.connect(self.mf_stop)
-			self.worker.start()
+				if answer==QMessageBox.StandardButton.Yes:
+					do_mf = True
 
-			# setup timer to update the progress_dialog		
-			self.timer = QTimer()
-			self.timer.timeout.connect(self.mf_update_progress)
-			self.timer.start(1000)  # in ms - 1000 means the progress_bar gets updated once every second
+			if do_mf:
+				# set up the progress_dialog
+				self.progress_dialog = QProgressDialog("Preparing matched filtering,\n please wait...", None, 0, len(self.templatebank.list_of_templates)+2, self) # None instead of "Cancel" as CancelButtonText removes the cancel-button.
+				self.progress_bar = QProgressBar(self.progress_dialog)
+				self.progress_bar.setMaximum(len(self.templatebank.list_of_templates)+2)
+				self.progress_dialog.setBar(self.progress_bar)
+				self.progress_dialog.setWindowTitle("Matched filtering")
+				self.progress_dialog.setWindowModality(Qt.WindowModal)
+				# self.progress_dialog.canceled.connect(self.mf_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
+
+				# create worker Thread
+				self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.config.get('main', 'os'), self.config.getboolean('main', 'debugmode'))
+				self.worker.exceptionSignal.connect(self.mf_exception)
+				self.worker.finished.connect(self.mf_stop)
+				self.worker.start()
+
+				# setup timer to update the progress_dialog		
+				self.timer = QTimer()
+				self.timer.timeout.connect(self.mf_update_progress)
+				self.timer.start(1000)  # in ms - 1000 means the progress_bar gets updated once every second
 
 		else:
 			msg = QMessageBox()
@@ -715,7 +732,7 @@ class DataScreen(Screen):
 			# load results
 			results_filename = self.data.savepath+'00_matched_filtering_results.dat'
 			if os.path.isfile(results_filename): 														# should I better do this in try/except style?
-				results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time', 'm1', 'm2', 'M', 'r'), 'formats': ('S5', 'f4', 'f4', 'f4', 'f4', 'f4', 'f4')})
+				results = np.loadtxt(results_filename,  dtype={'names': ('name', 'match', 'time', 'm1', 'm2', 'M', 'r', 'Mc'), 'formats': ('S5', 'f4', 'f4', 'f4', 'f4', 'f4', 'f4', 'f4')})
 				self.canvas = Canvas3DPlot(results, attribute)
 				self.canvas.show()
 

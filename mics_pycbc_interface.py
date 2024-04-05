@@ -12,6 +12,7 @@ import numpy as np
 from collections import defaultdict
 from datetime import datetime
 from configparser import ConfigParser
+from json import loads as jsonloads
 
 ### About
 #   -----
@@ -27,12 +28,13 @@ config.read('config.ini')
 debugmode = config.getboolean('main', 'debugmode')
 
 # approximants for template creation
-APX_DEFAULT = 'SEOBNRv4'   # By now I just randomly picked one that makes nice waveforms with inspiral, merger and ringdown.
-APX_ALL = td_approximants()
-APX_FORBIDDEN = ['SEOBNRv4', 'EOBNRv2_ROM', 'EOBNRv2HM_ROM', 'IMRPhenomXP', 'PhenSpinTaylor', 'PhenSpinTaylorRD', 
-	'SEOBNRv1_ROM_DoubleSpin', 'SEOBNRv1_ROM_EffectiveSpin', 'SEOBNRv2_ROM_DoubleSpin', 'SEOBNRv2_ROM_DoubleSpin_HI', 'SEOBNRv2_ROM_EffectiveSpin', 
-	'SEOBNRv4_ROM_NRTidalv2'] # Trying these apxs caused python to crash with a "Segmentation fault (core dumped)" - an exception it could not handle.
-APX_ALLOWED = list(set(APX_ALL).difference(APX_FORBIDDEN))
+APX_DEFAULT = config.get('approximants', 'apx_default')
+if not config.getboolean('approximants', 'use_backup'):
+	APX_ALL = td_approximants()
+	APX_FORBIDDEN = jsonloads(config.get('approximants', 'apx_forbidden')) # Trying these apxs caused python to crash with a "Segmentation fault (core dumped)" - an exception it could not handle.
+	APX_ALLOWED = list(set(APX_ALL).difference(APX_FORBIDDEN, [APX_DEFAULT]))
+else:
+	APX_ALLOWED = jsonloads(config.get('approximants', 'apx_backup'))
 
 
 ### Redefine classes inside the container
@@ -72,7 +74,8 @@ class Data:
 
 		self.segments = segment_data(datapath+filename, preferred_samplerate, segment_duration)
 
-
+class NaNError(Exception):
+	pass
 
 ### Data handling functions
 #   -----------------------
@@ -239,15 +242,20 @@ def make_template_any_apx( m1, m2, samplerate=4096, duration=1.0, flag_show=Fals
 	'Create a template. Try all allowed approximants (apx), if default apx fails.'
 	try:
 		hp_freq, hp = make_template(m1, m2, apx=APX_DEFAULT, samplerate=samplerate, duration=duration, flag_show=flag_show)
+		if np.isnan(hp_freq[0]) or np.isnan(hp[0]):
+			raise NaNError
 		return hp_freq, hp
 	except:
 		print('Creating template with default approximant ('+APX_DEFAULT+') failed. Trying other ones.')
 		for apx in APX_ALLOWED:
 			try:
 				hp_freq, hp = make_template(m1,m2,apx=apx, samplerate=samplerate, duration=duration, flag_show=flag_show)
+				if np.isnan(hp_freq[0]) or np.isnan(hp[0]):
+					raise NaNError
 				print('Creating template with other approximant ('+apx+') worked.')
 				return hp_freq, hp
-				break
+			except NaNError:
+				pass              # Custom Error only caused by Frequency-/or TimeSeries starting with a nan. Continue trying the other approximants.
 			except RuntimeError:
 				pass              # Probalby the approximant could not handle this particular set of parameters. Just continue trying the other approximants.
 	errorstring = errorname+' ('+str(datetime.now())+'): None of the approximants was able to create a template with masses '+str(m1)+' and '+str(m2)+'.\n'
@@ -292,6 +300,8 @@ def create_templates(parameters, savepath, basename, attribute, freq_domain, tim
 	'Creates templates for further use in matched filtering (freq_domain) or as signals (time_domain).'
 	# parameters should be a numpy array of dim 2xN; flag_Mr, freq_domain and time_domain should be boolean.
 	# keyword parameter should be either 'individual', 'total', or 'chirp'
+
+	# transform parameters to m1,m2, if necessary
 	N = len(parameters[0])
 	np.savetxt(savepath+'00_progress_create.dat', [0, N+1], fmt=['%i'])
 	masses = parameters
@@ -317,13 +327,12 @@ def create_templates(parameters, savepath, basename, attribute, freq_domain, tim
 		for index in np.arange(N):
 			if r[index]>1:
 				r[index] = 1./r[index]
-		m2 = Mc*np.power(np.power(r,-2)+np.power(r,-3), 0.2)
+		m2 = Mc*np.power(np.power(r,3)+np.power(r,2), 0.2)
 		m1 = m2/r
 		masses = np.asarray((m1,m2))
 		parameter_name = 'McR'
 	else:
 		raise ValueError('Keyword attribute should be individual, total or chrip but is '+str(attribute))
-
 
 	# create names and make distinctions between names if necessary
 	list_of_names = ['']*N
@@ -348,25 +357,30 @@ def create_templates(parameters, savepath, basename, attribute, freq_domain, tim
 				if parameters[0][name_index]==parameters[0][previous_index] and parameters[1][name_index]==parameters[1][previous_index]:
 					list_of_real_duplicates.append(name_index)
 
+	# create templates
 	for index,m1 in enumerate(masses[0]):
 		if not index in list_of_real_duplicates:
 			np.savetxt(savepath+'00_progress_create.dat', [index+1, N+1], fmt=['%i'])
 			m2 = masses[1][index]
 			name = list_of_names[index]
-			try:
-				strain_freq, strain_time = make_template_any_apx(m1,m2, errorname=name)
-				if time_domain: strain_time.save_to_wav(savepath+name+'.wav')
-				if freq_domain: save_FrequencySeries(strain_freq, savepath+name+'.hdf', m1, m2)
-			except ValueError:
-				errorstring = name+' ('+str(datetime.now())+'): There was a ValueError; probably a .hdf-file of that name already existed.\n'
-				print(errorstring)
-				with open(savepath+'errors.txt', 'a') as errorfile:
-					errorfile.write(errorstring)
-			except:
-				errorstring = name+' ('+str(datetime.now())+'): Unexpected Error with masses '+str(m1)+', '+str(m2)+'.\n'
-				print(errorstring)
-				with open(savepath+'errors.txt', 'a') as errorfile:
-					errorfile.write(errorstring)
+			if 0.49<m1+m2<100.1 : # 0.49<m1<100.1 and 0.49<m2<100.1: <- this is what I wanted at first, but for some reason, runtime explodes with this.
+				try:
+					strain_freq, strain_time = make_template_any_apx(m1,m2, errorname=name)
+					if time_domain: strain_time.save_to_wav(savepath+name+'.wav')
+					if freq_domain: save_FrequencySeries(strain_freq, savepath+name+'.hdf', m1, m2)
+				except ValueError:
+					errorstring = name+' ('+str(datetime.now())+'): There was a ValueError; probably a .hdf-file of that name already existed.\n'
+					print(errorstring)
+					with open(savepath+'errors.txt', 'a') as errorfile:
+						errorfile.write(errorstring)
+				except:
+					errorstring = name+' ('+str(datetime.now())+'): Unexpected Error with masses '+str(m1)+', '+str(m2)+'.\n'
+					print(errorstring)
+					with open(savepath+'errors.txt', 'a') as errorfile:
+						errorfile.write(errorstring)
+			else:
+				if debugmode: 
+					print('create_templates: omitting masses '+str(m1)+', '+str(m2)+' (out of range)')
 	np.savetxt(savepath+'00_progress_create.dat', [N+1, N+1], fmt=['%i'])
 
 
@@ -512,8 +526,8 @@ def matched_filter_templatebank(data, templatebank):
 	# prepare output
 	num = len(templatebank.list_of_templates)
 	np.savetxt(data.savepath+'00_progress_mf.dat', [0, num+2], fmt=['%i'])
-	dtype = [('templatename', (np.str_,40)), ('maxmatch', np.float64), ('maxtime', np.float64), ('m1', np.float64), ('m2', np.float64), ('M', np.float64), ('r', np.float64)]
-	results = np.zeros((num,7))
+	dtype = [('templatename', (np.str_,40)), ('maxmatch', np.float64), ('maxtime', np.float64), ('m1', np.float64), ('m2', np.float64), ('M', np.float64), ('r', np.float64), ('Mc', np.float64)]
+	results = np.zeros((num,8))
 	names = []
 	maxmatches_all = []
 	writedata = np.array(np.arange(num), dtype=dtype)
@@ -523,14 +537,14 @@ def matched_filter_templatebank(data, templatebank):
 		np.savetxt(data.savepath+'00_progress_mf.dat', [index+1, num+2], fmt=['%i'])
 		_,_,_,_,Maxmatch = matched_filter_single(data, template)
 		maxmatches_all.append(Maxmatch)
-		results[index] = index, Maxmatch[0], Maxmatch[1], template.m1, template.m2, template.m1+template.m2, template.m1/template.m2
+		results[index] = index, Maxmatch[0], Maxmatch[1], template.m1, template.m2, template.m1+template.m2, template.m2/template.m1, np.power(template.m1*template.m2, 0.6)/np.power(template.m1+template.m2, 0.2)
 		names.append(template.shortname)
-		writedata[index] = template.shortname, Maxmatch[0], Maxmatch[1], template.m1, template.m2, template.m1+template.m2, template.m1/template.m2
+		writedata[index] = template.shortname, Maxmatch[0], Maxmatch[1], template.m1, template.m2, template.m1+template.m2, template.m2/template.m1, np.power(template.m1*template.m2, 0.6)/np.power(template.m1+template.m2, 0.2)
 	np.savetxt(data.savepath+'00_progress_mf.dat', [num+1, num+2], fmt=['%i'])
 	# sorted output
 	results_sorted = results[results[:,1].argsort()[::-1]]
 	for index in range(num):
-		sortdata[index] = names[int(results_sorted[index,0])], results_sorted[index,1], results_sorted[index,2], results_sorted[index,3], results_sorted[index,4], results_sorted[index,5], results_sorted[index,6]
+		sortdata[index] = names[int(results_sorted[index,0])], results_sorted[index,1], results_sorted[index,2], results_sorted[index,3], results_sorted[index,4], results_sorted[index,5], results_sorted[index,6], results_sorted[index,7]
 		# create a merger plot for best matching templates
 		if not config.getboolean('mergerplots', 'create_all'):
 			if index < config.getint('mergerplots', 'min_number'):  # I refrain from updating the progress bar while plotting even if it takes a noticeable amount of time. 
@@ -539,10 +553,10 @@ def matched_filter_templatebank(data, templatebank):
 				plot_merger(data, templatebank.list_of_templates[int(results_sorted[index,0])], maxmatches_all[int(results_sorted[index,0])])
 	# save results
 	header = 'Matched Filtering results of '+data.shortname+': \n'
-	header += 'templatename, match, time of match, template-m1, template-m2, template-M, template-r'
-	np.savetxt(data.savepath+'00_matched_filtering_results.dat', writedata, fmt=['%s', '%f', '%f', '%f', '%f', '%f', '%f'], header=header)
+	header += 'templatename, match, time of match, template-m1, template-m2, template-M, template-R, template-Mc'
+	np.savetxt(data.savepath+'00_matched_filtering_results.dat', writedata, fmt=['%s', '%f', '%f', '%f', '%f', '%f', '%f', '%f'], header=header)
 	# save results sorted by match
 	header = 'Matched Filtering results of '+data.shortname+' (sorted by match): \n'
-	header += 'templatename, match, time of match, template-m1, template-m2, template-M, template-r'
-	np.savetxt(data.savepath+'00_matched_filtering_results_sorted.dat', sortdata, fmt=['%s', '%f', '%f', '%f', '%f', '%f', '%f'], header=header)
+	header += 'templatename, match, time of match, template-m1, template-m2, template-M, template-R, template-Mc'
+	np.savetxt(data.savepath+'00_matched_filtering_results_sorted.dat', sortdata, fmt=['%s', '%f', '%f', '%f', '%f', '%f', '%f', '%f'], header=header)
 	np.savetxt(data.savepath+'00_progress_mf.dat', [num+2, num+2], fmt=['%i'])

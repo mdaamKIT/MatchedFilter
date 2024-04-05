@@ -1,0 +1,19 @@
+
+Output of pycbc.waveform.td_approximants() on my machine as of 2024-04-05:
+
+['TaylorT1', 'TaylorT2', 'TaylorT3', 'SpinTaylorT1', 'SpinTaylorT4', 'SpinTaylorT5', 'PhenSpinTaylor', 'PhenSpinTaylorRD', 'EOBNRv2', 'EOBNRv2HM', 'TEOBResum_ROM', 'SEOBNRv1', 'SEOBNRv2', 'SEOBNRv2_opt', 'SEOBNRv3', 'SEOBNRv3_pert', 'SEOBNRv3_opt', 'SEOBNRv3_opt_rk4', 'SEOBNRv4', 'SEOBNRv4_opt', 'SEOBNRv4P', 'SEOBNRv4PHM', 'SEOBNRv2T', 'SEOBNRv4T', 'SEOBNRv4_ROM_NRTidalv2', 'SEOBNRv4_ROM_NRTidalv2_NSBH', 'HGimri', 'IMRPhenomA', 'IMRPhenomB', 'IMRPhenomC', 'IMRPhenomD', 'IMRPhenomD_NRTidalv2', 'IMRPhenomNSBH', 'IMRPhenomHM', 'IMRPhenomPv2', 'IMRPhenomPv2_NRTidal', 'IMRPhenomPv2_NRTidalv2', 'TaylorEt', 'TaylorT4', 'EccentricTD', 'SpinDominatedWf', 'NR_hdf5', 'NRSur7dq2', 'NRSur7dq4', 'SEOBNRv4HM', 'NRHybSur3dq8', 'IMRPhenomXAS', 'IMRPhenomXHM', 'IMRPhenomPv3', 'IMRPhenomPv3HM', 'IMRPhenomXP', 'IMRPhenomXPHM', 'TEOBResumS', 'IMRPhenomT', 'IMRPhenomTHM', 'IMRPhenomTP', 'IMRPhenomTPHM', 'SEOBNRv4HM_PA', 'pSEOBNRv4HM_PA', 'IMRPhenomXAS_NRTidalv2', 'IMRPhenomXP_NRTidalv2', 'IMRPhenomXO4a', 'ExternalPython', 'TaylorF2', 'SEOBNRv1_ROM_EffectiveSpin', 'SEOBNRv1_ROM_DoubleSpin', 'SEOBNRv2_ROM_EffectiveSpin', 'SEOBNRv2_ROM_DoubleSpin', 'EOBNRv2_ROM', 'EOBNRv2HM_ROM', 'SEOBNRv2_ROM_DoubleSpin_HI', 'SEOBNRv4_ROM', 'SEOBNRv4HM_ROM', 'IMRPhenomD_NRTidal', 'SpinTaylorF2', 'TaylorF2NL', 'PreTaylorF2', 'SpinTaylorF2_SWAPPER']
+
+
+My config entries as of 2024-04-05:
+
+apx_default = SEOBNRv4
+apx_forbidden = ["EOBNRv2_ROM", "EOBNRv2HM_ROM", "IMRPhenomXP", "PhenSpinTaylor", "PhenSpinTaylorRD", "SEOBNRv1_ROM_DoubleSpin", "SEOBNRv1_ROM_EffectiveSpin", "SEOBNRv2_ROM_DoubleSpin", "SEOBNRv2_ROM_DoubleSpin_HI", "SEOBNRv2_ROM_EffectiveSpin", "SEOBNRv4_ROM_NRTidalv2"]
+
+
+Some explanation:
+
+When creating templates with the pycbc.waveform.get_td_waveform(), you need to specify an approximant. (There are different options on how to approximate a waveform of a gravitational wave for given parameters.)
+Not every approximant works well with every set of parameters. Thus, we declared one of the approximants as default. It produces nice waveforms in a considerably wide range of parameters. But there are sets of parameters where it fails and in those cases, we fall back to trying every approximant in the list given by td_approximants() until one produces a waveform. 
+Unfortunately some of the approximants caused non-manageable errors at times, causing python to crash with a "Segmentation fault (core dumped)" error. These approximants are listed in apx_forbidden and the MatchedFilter software will never try any of the approximants in this list to prevent crashing.
+At some point in the future, the developers of the pycbc software package could add new approximants to the list (and maybe on your system there are other approximants available) and those could include approximants causing your MatchedFilter software to crash. If so, you would need to identifiy the ones causing the crashes and add them to the list of forbidden approximants. The python script try_approximants.py could help you identifying malefactors. You could also open the config.ini file and manually set the variable 'use_backup' in the [approximants] section to 'True'. This will just use the hard-coded 'apx_backup' list of approximants that worked well on my machine in early 2024.
+
