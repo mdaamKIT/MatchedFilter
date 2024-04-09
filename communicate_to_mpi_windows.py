@@ -49,30 +49,43 @@ class MPIConnection:
 		'Bind-mounts a directory from host for the container to read files from.'
 		self.volumes[input_host] = {'bind': input_container, 'mode': 'ro'}
 
-	###### !!!!! Note: first, I used the shortnames of the files as identifiers for the objects. That did not work, as they contained hyphens ('-') which are not allowd in names in python.
+	# def transfer_data(self, data):
+	# 	'Transfer a Data object from the templatebank_handler to mics_pycbc_interface inside the container.'
+	# 	datapath_container = '/input/'+data.shortname+'/'
+	# 	savepath_container = '/output/'+data.shortname+'/'
+	# 	self.add_read_dir(data.datapath, datapath_container)
+	# 	self.add_output_dir(data.savepath, savepath_container)
+	# 	self.script += 'data = mpi.Data("'+self.volumes[data.datapath]['bind']+'","'+data.filename+'","'+self.volumes[data.savepath]['bind']+'",'+str(data.preferred_samplerate)+','+str(data.segment_duration)+','+str(data.flag_show)+'); '
 
-	def transfer_data(self, data):
-		'Transfer a Data object from the templatebank_handler to mics_pycbc_interface inside the container.'
-		datapath_container = '/input/'+data.shortname+'/'
+	# def transfer_templatebank(self, templatebank):
+	# 	'Transfer a TemplateBank object from the templatebank_handler to mics_pycbc_interface inside the container.'
+	# 	list_of_bankpaths_both = [(bankpath_host,'/input/templatebank/'+Path(bankpath_host).parts[-1]+'_'+str(distinction)+'/') for distinction, bankpath_host in enumerate(templatebank.list_of_bankpaths)]  # distinction because we really need unique names for different paths
+	# 	for bankpath_both in list_of_bankpaths_both:
+	# 		self.add_read_dir(bankpath_both[0], bankpath_both[1])
+	# 	self.script += 'templatebank = mpi.TemplateBank(); '
+	# 	for template in templatebank.list_of_templates:
+	# 		self.script += 'templatebank.add_template("'+self.volumes[template.bankpath]['bind']+'","'+template.filename+'"); '
+
+	def transfer_objects(self, data, templatebank):
+		'Transfer a Data and a TemplateBank object from the templatebank_handler to mics_pycbc_interface inside the container.'
+
+		# Data
 		savepath_container = '/output/'+data.shortname+'/'
-		self.add_read_dir(data.datapath, datapath_container)
 		self.add_output_dir(data.savepath, savepath_container)
+		if data.datapath != data.savepath:
+			datapath_container = '/input/'+data.shortname+'/'
+			self.add_read_dir(data.datapath, datapath_container)
 		self.script += 'data = mpi.Data("'+self.volumes[data.datapath]['bind']+'","'+data.filename+'","'+self.volumes[data.savepath]['bind']+'",'+str(data.preferred_samplerate)+','+str(data.segment_duration)+','+str(data.flag_show)+'); '
 
-	def transfer_template(self, template):
-		'Transfer a Template object from the templatebank_handler to mics_pycbc_interface inside the container.'
-		templatepath_container = '/input/templates/'+template.shortname+'/'
-		self.add_read_dir(template.bankpath, templatepath_container)
-		self.script += 'template = mpi.Template("'+self.volumes[template.bankpath]['bind']+'","'+template.filename+'"); '
-
-	def transfer_templatebank(self, templatebank):
-		'Transfer a TemplateBank object from the templatebank_handler to mics_pycbc_interface inside the container.'
-		list_of_bankpaths_both = [(bankpath_host,'/input/templatebank/'+Path(bankpath_host).parts[-1]+'_'+str(distinction)+'/') for distinction, bankpath_host in enumerate(templatebank.list_of_bankpaths)]  # distinction because we really need unique names for different paths
+		# TemplateBank
+		list_of_bankpaths = list(set(templatebank.list_of_bankpaths).difference([data.datapath, data.savepath]))
+		list_of_bankpaths_both = [(bankpath_host,'/input/templatebank/'+Path(bankpath_host).parts[-1]+'_'+str(distinction)+'/') for distinction, bankpath_host in enumerate(list_of_bankpaths)]  # distinction because we really need unique names for different paths
 		for bankpath_both in list_of_bankpaths_both:
 			self.add_read_dir(bankpath_both[0], bankpath_both[1])
 		self.script += 'templatebank = mpi.TemplateBank(); '
 		for template in templatebank.list_of_templates:
-			self.script += 'templatebank.add_template("'+self.volumes[template.bankpath]['bind']+'","'+template.filename+'"); '
+			self.script += 'templatebank.add_template("'+self.volumes[template.bankpath]['bind']+'","'+template.filename+'"); '		
+
 
 	### running and stopping the container
 
@@ -104,17 +117,11 @@ class MPIConnection:
 	### finally composing everything (these method names are capitalized)
 	#      only these methods need to be called from outside this script.
 
-	def Matched_Filter_single(self, data, template):
-		'Composing a Matched Filtering with a single template.'
-		self.transfer_data(data)
-		self.transfer_template(template)
-		self.script += 'mpi.matched_filter_single( data, template ); '
-		self.run()
-
 	def Matched_Filter_templatebank(self, data, templatebank):
 		'Composing a Matched Filtering with every template in the templatebank.'
-		self.transfer_data(data)
-		self.transfer_templatebank(templatebank)
+		# self.transfer_data(data)
+		# self.transfer_templatebank(templatebank)
+		self.transfer_objects(data, templatebank)
 		self.script += 'mpi.matched_filter_templatebank( data, templatebank ); '
 		self.run()
 

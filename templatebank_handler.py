@@ -108,7 +108,7 @@ class Data:
 			if debugmode: connection.update_mpi()
 			connection.Matched_Filter_templatebank(self, templatebank)
 		else:
-			print('Error, linux style without docker not yet supported. Open config.ini, go to main and change os to windows.')
+			print('Error: linux style without docker not yet supported. Open config.ini, go to main, change the value of the variable os to windows and restart the MatchedFilter application.')
 
 	### !!!!! I guess, the following ones are not needed and could be deleted.
 

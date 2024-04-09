@@ -490,7 +490,8 @@ class CreateScreen(Screen):
 		time_domain = self.checkBox_time.isChecked()
 
 		# set up the progress_dialog
-		self.progress_dialog = QProgressDialog("Preparing template creation,\n please wait...", None, 0, len(array[0])+1, self) # None instead of "Cancel" as CancelButtonText removes the cancel-button.
+		self.progress_dialog = QProgressDialog("Preparing template creation,\n please wait...", "Cancel", 0, len(array[0])+1, self) # None instead of "Cancel" as CancelButtonText removes the cancel-button.
+		self.progress_dialog.canceled.connect(self.create_cancel)
 		self.progress_bar = QProgressBar(self.progress_dialog)
 		self.progress_bar.setMaximum(len(array[0])+1)
 		self.progress_dialog.setBar(self.progress_bar)
@@ -535,11 +536,17 @@ class CreateScreen(Screen):
 		# 		self.create_stop()
 		# 		return
 
+	def create_cancel(self):
+		canceled = np.ones(1, dtype=bool)
+		canceled.tofile(self.path+'canceled.txt') # read as np.fromfile(self.path+'canceled.txt', dtype=bool)
+		self.create_stop()
+		return
+
 	def create_stop(self, event=None):
 		self.timer.stop()
 		self.progress_dialog.close()
-		self.worker.requestInterruption()
-		self.worker.quit()
+		# self.worker.requestInterruption()
+		# self.worker.quit()
 		self.worker.wait()
 		self.worker.deleteLater()
 		if os.path.isfile(self.path+'00_progress_create.dat'):
@@ -636,7 +643,8 @@ class DataScreen(Screen):
 
 			if do_mf:
 				# set up the progress_dialog
-				self.progress_dialog = QProgressDialog("Preparing matched filtering,\n please wait...", None, 0, len(self.templatebank.list_of_templates)+2, self) # None instead of "Cancel" as CancelButtonText removes the cancel-button.
+				self.progress_dialog = QProgressDialog("Preparing matched filtering,\n please wait...", "Cancel", 0, len(self.templatebank.list_of_templates)+2, self) # None instead of "Cancel" as CancelButtonText removes the cancel-button.
+				self.progress_dialog.canceled.connect(self.mf_cancel)
 				self.progress_bar = QProgressBar(self.progress_dialog)
 				self.progress_bar.setMaximum(len(self.templatebank.list_of_templates)+2)
 				self.progress_dialog.setBar(self.progress_bar)
@@ -692,18 +700,30 @@ class DataScreen(Screen):
 		# 		self.mf_stop()
 		# 		return
 
+	def mf_cancel(self):
+		canceled = np.ones(1, dtype=bool)
+		canceled.tofile(self.data.savepath+'canceled.txt') # read as np.fromfile(self.path+'canceled.txt', dtype=bool)
+		self.mf_stop()
+		try:
+			os.remove(self.data.savepath+'canceled.txt')
+		except FileNotFoundError:
+			pass
+		return
+
 	def mf_stop(self, event=None):
 		self.timer.stop()
 		self.progress_dialog.close()
-		self.worker.requestInterruption()
-		self.worker.quit()
+		# self.worker.requestInterruption()
+		# self.worker.quit()
 		self.worker.wait()
 		self.worker.deleteLater()
-		if os.path.isfile(self.data.savepath+'00_progress_mf.dat'):
-			try:
-				os.remove(self.data.savepath+'00_progress_mf.dat')
-			except PermissionError:
-				print('No permission to remove 00_progress_mf.dat. Moving on.')
+		# if os.path.isfile(self.data.savepath+'00_progress_mf.dat'):
+		try:
+			os.remove(self.data.savepath+'00_progress_mf.dat')
+		except FileNotFoundError:
+			pass
+		except PermissionError:
+			print('No permission to remove 00_progress_mf.dat. Moving on.')
 
 	def mf_exception(self):
 			msg = QMessageBox()
