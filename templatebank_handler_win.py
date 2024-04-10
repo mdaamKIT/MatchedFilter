@@ -1,8 +1,5 @@
 import os
-import glob
-import numpy as np
 from configparser import ConfigParser
-from os import getcwd
 
 import docker
 from pathlib import Path
@@ -15,7 +12,10 @@ debugmode = config.getboolean('main', 'debugmode')
 ### About the templatebank_handler and mics_pycbc_interface
 #   -------------------------------------------------------
 
-# Something to be said here?
+# The MatchedFilter software relies on functions of the pycbc package which is not available on Windows, but on linux and MacOS.
+# To be working on Winodws machines as well, a docker container is used.
+# Templatebank_handler_win manages the communication between the main application on the host (matchedfilter.py) 
+# and the auxiliary interface for pycbc (mics_pycbc_interface, mpi) in the docker container. 
 
 
 class TemplateBank:
@@ -85,10 +85,6 @@ class Data:
 		self.savepath = newpath
 		mkdir(self.savepath, relative=False)
 
-	def clear(self):
-		for file in glob.glob(self.savepath+self.shortname+'_*'):
-			os.remove(file)
-
 	# changing of presets (should never be necessary)
 
 	def change_flagshow(self, new_flag):
@@ -111,7 +107,7 @@ class MPIConnection:
 		self.volumes = {}     # {output_host: {'bind': output_container, 'mode': 'rw'}}
 		self.commands = []
 		self.script = '''python -c 'import mics_pycbc_interface as mpi; '''
-		self.add_read_dir(getcwd(), '/input/mf/')
+		self.add_read_dir(os.getcwd(), '/input/mf/')
 		self.commands.append('cp /input/mf/config.ini /')
 		
 	def add_output_dir(self, output_host, output_container):

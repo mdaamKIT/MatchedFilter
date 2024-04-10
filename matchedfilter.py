@@ -417,7 +417,7 @@ class CreateScreen(Screen):
 		if self.path:
 			self.label_path.setText(self.make_label(self.path,100,0))
 			self.show()
-			self.config.set('main', 'bankpath', self.path)
+			self.config.set('main', 'bankpath', os.path.dirname(os.path.normpath(self.path))+'/')
 			with open('config.ini', 'w') as f:
 				self.config.write(f)
 		return
