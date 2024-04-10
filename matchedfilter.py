@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # This is the main-File.
 
@@ -12,7 +12,6 @@ import os
 from configparser import ConfigParser
 import ast
 import numpy as np
-import templatebank_handler as handler  # selfmade; defines classes for matched filtering
 import time
 
 # for the plot
@@ -54,7 +53,7 @@ class MatchedFilteringWorker(QThread):
 
 	exceptionSignal = pyqtSignal()
 
-	def __init__(self, data, templatebank, OS, debugmode):
+	def __init__(self, data, templatebank, debugmode):
 		super().__init__()
 		self.data = data
 		self.templatebank = templatebank
@@ -63,7 +62,7 @@ class MatchedFilteringWorker(QThread):
 
 	def run(self):
 		try:
-			self.data.matched_filter(self.templatebank, self.OS, self.debugmode)
+			self.data.matched_filter(self.templatebank, self.debugmode)
 		except:
 			self.exceptionSignal.emit()
 
@@ -238,7 +237,7 @@ class TemplateScreen(Screen):
 		loadUi(os.getcwd()+'/template_screen.ui',self)
 		self.setWindowTitle('Matched filtering with pycbc (template management)')
 		self.config = config
-		if templatebank:
+		if templatebank:                         # maybe better do an isinstance check here
 			self.templatebank = templatebank
 		else:
 			self.templatebank = handler.TemplateBank()			
@@ -347,6 +346,13 @@ class SetupScreen(Screen):             # maybe this should be a QDialog instead 
 	@pyqtSlot()
 	def done(self):
 		self.config.set('main', 'firststartup', 'False')
+		OS = self.config.get('main', 'os')
+		if OS=='windows':
+			import templatebank_handler_win as handler
+		elif OS=='linux':
+			import templatebank_handler_linux as handler
+		else:
+			raise ValueError('''Value for os in [main] in config.ini is expected to be either 'windows' or 'linux', but I got: ''', OS)
 		with open('config.ini', 'w') as f:
 			self.config.write(f)
 		self.to_template_screen()
@@ -411,6 +417,10 @@ class CreateScreen(Screen):
 		if self.path:
 			self.label_path.setText(self.make_label(self.path,100,0))
 			self.show()
+			self.config.set('main', 'bankpath', self.path)
+			with open('config.ini', 'w') as f:
+				self.config.write(f)
+		return
 
 	@pyqtSlot()
 	def change_Attribute(self):
@@ -536,17 +546,22 @@ class CreateScreen(Screen):
 		# 		self.create_stop()
 		# 		return
 
-	def create_cancel(self):
+	def create_cancel(self, event=None):
 		canceled = np.ones(1, dtype=bool)
 		canceled.tofile(self.path+'canceled.txt') # read as np.fromfile(self.path+'canceled.txt', dtype=bool)
-		self.create_stop()
+		self.timer.stop()
+		self.progress_dialog.close()
+		self.worker.wait()
+		self.worker.deleteLater()
+		try:
+			os.remove(self.path+'canceled.txt')
+		except FileNotFoundError:
+			pass
 		return
 
 	def create_stop(self, event=None):
 		self.timer.stop()
 		self.progress_dialog.close()
-		# self.worker.requestInterruption()
-		# self.worker.quit()
 		self.worker.wait()
 		self.worker.deleteLater()
 		if os.path.isfile(self.path+'00_progress_create.dat'):
@@ -653,7 +668,7 @@ class DataScreen(Screen):
 				# self.progress_dialog.canceled.connect(self.mf_stop)  # for some reason this line triggers the mf_stop also when the progress_dialog.close gets called.
 
 				# create worker Thread
-				self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.config.get('main', 'os'), self.config.getboolean('main', 'debugmode'))
+				self.worker = MatchedFilteringWorker(self.data, self.templatebank, self.config.getboolean('main', 'debugmode'))
 				self.worker.exceptionSignal.connect(self.mf_exception)
 				self.worker.finished.connect(self.mf_stop)
 				self.worker.start()
@@ -703,7 +718,10 @@ class DataScreen(Screen):
 	def mf_cancel(self):
 		canceled = np.ones(1, dtype=bool)
 		canceled.tofile(self.data.savepath+'canceled.txt') # read as np.fromfile(self.path+'canceled.txt', dtype=bool)
-		self.mf_stop()
+		self.timer.stop()
+		self.progress_dialog.close()
+		self.worker.wait()
+		self.worker.deleteLater()
 		try:
 			os.remove(self.data.savepath+'canceled.txt')
 		except FileNotFoundError:
@@ -713,17 +731,15 @@ class DataScreen(Screen):
 	def mf_stop(self, event=None):
 		self.timer.stop()
 		self.progress_dialog.close()
-		# self.worker.requestInterruption()
-		# self.worker.quit()
 		self.worker.wait()
 		self.worker.deleteLater()
-		# if os.path.isfile(self.data.savepath+'00_progress_mf.dat'):
-		try:
-			os.remove(self.data.savepath+'00_progress_mf.dat')
-		except FileNotFoundError:
-			pass
-		except PermissionError:
-			print('No permission to remove 00_progress_mf.dat. Moving on.')
+		if os.path.isfile(self.data.savepath+'00_progress_create.dat'):
+			try:
+				os.remove(self.data.savepath+'00_progress_mf.dat')
+			except FileNotFoundError:
+				pass
+			except PermissionError:
+				print('No permission to remove 00_progress_mf.dat. Moving on.')
 
 	def mf_exception(self):
 			msg = QMessageBox()
@@ -781,6 +797,14 @@ class DataScreen(Screen):
 
 config = ConfigParser()
 config.read('config.ini')
+
+OS = config.get('main', 'os')
+if OS=='windows':
+	import templatebank_handler_win as handler
+elif OS=='linux':
+	import templatebank_handler_linux as handler
+else:
+	raise ValueError('''Value for os in [main] in config.ini is expected to be either 'windows' or 'linux', but I got: ''', OS)
 
 with open('matchedfilter.qss','r') as qss:
 	style = qss.read()

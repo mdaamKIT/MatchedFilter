@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import matplotlib.pyplot as plt
 from pycbc.waveform import get_td_waveform,td_approximants

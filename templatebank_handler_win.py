@@ -1,36 +1,109 @@
-#!/usr/bin/python3
-
-
-# This file seeks to handle communication between the templatebank_handler and mics_pycbc_interface.
-# It operates on the host, commanding a docker container.
-# Communication needs to be handled a little differently depending on operation system (linux or windows) as pycbc is not available on Windows.
-# If running on a windows machine, mics_pycbc_interface has to be exiled into a docker container.
-# All complexity added by communicating to a script running in a container (windows) is handled by this file.
-
-
-### How the container works:
-#   ------------------------
-#   - Configure all the directories with files in them to be read by the container or where files should be written by it.
-#       These configurations get written into the MPIConnection.volumes dictionary.
-#       They can not be changed, once the container is started.
-#   - Collect all the code that should be executed inside the container.
-#       This code consists of two parts:
-#         * A list of commands than can be executed one after the other, preparing the container for the final python script.
-#         * A python 'script' to be run in the container. 
-#             It has to be run in one go since e.g. the template-object has to stick inside the cache until the matched filtering is done.
-#   - Run the container (MPIConnection.run()) with the pre-setup configurations, executing the commands from the commands list and the python script.
-#       At the end of the run() function, the container will be stopped and deleted and the MPIConnection variables are set back to their initial values.
-#       Now you could start again, configuring the container.
-
+import os
+import glob
+import numpy as np
 from configparser import ConfigParser
 from os import getcwd
+
+import docker
+from pathlib import Path
 
 config = ConfigParser()
 config.read('config.ini')
 debugmode = config.getboolean('main', 'debugmode')
 
-import docker
-from pathlib import Path
+
+### About the templatebank_handler and mics_pycbc_interface
+#   -------------------------------------------------------
+
+# Something to be said here?
+
+
+class TemplateBank:
+	def __init__(self):
+		self.list_of_templates = []
+		self.list_of_bankpaths = []
+	
+	def add_template(self, bankpath, filename, flag_print=True):
+		'Add a single file to the TemplateBank.'
+		self.list_of_templates.append(Template(bankpath, filename))
+		if not bankpath in self.list_of_bankpaths: self.list_of_bankpaths.append(bankpath)
+		if flag_print: print('Added ', self.list_of_templates[-1].shortname, ' to the template bank.')
+	
+	def add_directory(self, path):
+		'Add all .hdf-files in path to the TemplateBank.'
+		listofnames = [f for f in os.listdir(path) if f.endswith('.hdf')]
+		listofnames.sort()
+		for filename in listofnames:
+			self.add_template(path, filename, flag_print=False)
+		print('Added all .hdf files in '+path+' to the template bank.')
+
+	def create_templates(self, array_masses, bankpath, basename, attribute='individual', freq_domain=True, time_domain=False):
+		'Creates templates and adds them to the templatebank.'
+		connection = MPIConnection()
+		if debugmode: connection.update_mpi()
+		list_old_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf')]
+		connection.Create_Templates(array_masses, bankpath, basename, attribute, freq_domain, time_domain)
+		if freq_domain:
+			list_new_templates = [f for f in os.listdir(bankpath) if f.endswith('.hdf') and f not in list_old_templates]
+			for filename in list_new_templates: self.add_template(bankpath, filename, flag_print=False)
+			print('Added '+str(len(list_new_templates))+' new templates to the template bank.')
+
+class Template:
+	def __init__(self, bankpath, filename):
+		self.bankpath = bankpath
+		self.filename = filename
+		self.shortname = filename[:-4]
+		
+class Data:
+	def __init__(self, datapath, filename):
+		self.datapath = datapath
+		self.filename = filename
+		self.shortname = filename[:-4]
+		self.savepath = self.datapath+self.shortname+'/'
+		# Some settings are fixed so far. They can be changed with explicitly calling their changing methods (see below) but there should be no need.
+		self.flag_show = False
+		self.preferred_samplerate = 4096
+		self.segment_duration = 1
+		# self.ending = '.wav'
+
+	def matched_filter(self, templatebank, debugmode=False):
+		'Performs Matched Filtering with every template in the templatebank.'
+		if not isinstance(templatebank, TemplateBank):
+			raise TypeError('templatebank has to be an instance of TemplateBank class but has type: ' + str(type(templatebank)))
+		mkdir(self.savepath, relative=False)
+		connection = MPIConnection()
+		if debugmode: connection.update_mpi()
+		connection.Matched_Filter_templatebank(self, templatebank)
+
+	def set_datapath(self, newpath):
+		self.datapath = newpath
+
+	def set_shortname(self, newname):
+		self.shortname = newname
+
+	def set_savepath(self, newpath):
+		self.savepath = newpath
+		mkdir(self.savepath, relative=False)
+
+	def clear(self):
+		for file in glob.glob(self.savepath+self.shortname+'_*'):
+			os.remove(file)
+
+	# changing of presets (should never be necessary)
+
+	def change_flagshow(self, new_flag):
+		self.flag_show = new_flag
+
+	def change_preferred_samplerate(self, new_samplerate):
+		self.preferred_samplerate = new_samplerate
+
+	def change_segment_duration(self, new_segment_duration):
+		self.segment_duration = new_segment_duration
+
+	def change_file_extension(self, new_file_extension):
+		self.ending = new_file_extension
+
+
 
 class MPIConnection:
 	def __init__(self):
@@ -49,26 +122,8 @@ class MPIConnection:
 		'Bind-mounts a directory from host for the container to read files from.'
 		self.volumes[input_host] = {'bind': input_container, 'mode': 'ro'}
 
-	# def transfer_data(self, data):
-	# 	'Transfer a Data object from the templatebank_handler to mics_pycbc_interface inside the container.'
-	# 	datapath_container = '/input/'+data.shortname+'/'
-	# 	savepath_container = '/output/'+data.shortname+'/'
-	# 	self.add_read_dir(data.datapath, datapath_container)
-	# 	self.add_output_dir(data.savepath, savepath_container)
-	# 	self.script += 'data = mpi.Data("'+self.volumes[data.datapath]['bind']+'","'+data.filename+'","'+self.volumes[data.savepath]['bind']+'",'+str(data.preferred_samplerate)+','+str(data.segment_duration)+','+str(data.flag_show)+'); '
-
-	# def transfer_templatebank(self, templatebank):
-	# 	'Transfer a TemplateBank object from the templatebank_handler to mics_pycbc_interface inside the container.'
-	# 	list_of_bankpaths_both = [(bankpath_host,'/input/templatebank/'+Path(bankpath_host).parts[-1]+'_'+str(distinction)+'/') for distinction, bankpath_host in enumerate(templatebank.list_of_bankpaths)]  # distinction because we really need unique names for different paths
-	# 	for bankpath_both in list_of_bankpaths_both:
-	# 		self.add_read_dir(bankpath_both[0], bankpath_both[1])
-	# 	self.script += 'templatebank = mpi.TemplateBank(); '
-	# 	for template in templatebank.list_of_templates:
-	# 		self.script += 'templatebank.add_template("'+self.volumes[template.bankpath]['bind']+'","'+template.filename+'"); '
-
 	def transfer_objects(self, data, templatebank):
 		'Transfer a Data and a TemplateBank object from the templatebank_handler to mics_pycbc_interface inside the container.'
-
 		# Data
 		savepath_container = '/output/'+data.shortname+'/'
 		self.add_output_dir(data.savepath, savepath_container)
@@ -76,7 +131,6 @@ class MPIConnection:
 			datapath_container = '/input/'+data.shortname+'/'
 			self.add_read_dir(data.datapath, datapath_container)
 		self.script += 'data = mpi.Data("'+self.volumes[data.datapath]['bind']+'","'+data.filename+'","'+self.volumes[data.savepath]['bind']+'",'+str(data.preferred_samplerate)+','+str(data.segment_duration)+','+str(data.flag_show)+'); '
-
 		# TemplateBank
 		list_of_bankpaths = list(set(templatebank.list_of_bankpaths).difference([data.datapath, data.savepath]))
 		list_of_bankpaths_both = [(bankpath_host,'/input/templatebank/'+Path(bankpath_host).parts[-1]+'_'+str(distinction)+'/') for distinction, bankpath_host in enumerate(list_of_bankpaths)]  # distinction because we really need unique names for different paths
@@ -85,9 +139,6 @@ class MPIConnection:
 		self.script += 'templatebank = mpi.TemplateBank(); '
 		for template in templatebank.list_of_templates:
 			self.script += 'templatebank.add_template("'+self.volumes[template.bankpath]['bind']+'","'+template.filename+'"); '		
-
-
-	### running and stopping the container
 
 	def run(self):
 		'Running the prepared commands and script inside the container and clearing them.'
@@ -113,14 +164,11 @@ class MPIConnection:
 		self.commands.append('cp /input/mf/mics_pycbc_interface.py /')
 
 
-
 	### finally composing everything (these method names are capitalized)
-	#      only these methods need to be called from outside this script.
+	#      only these methods need to be called from outside this object.
 
 	def Matched_Filter_templatebank(self, data, templatebank):
 		'Composing a Matched Filtering with every template in the templatebank.'
-		# self.transfer_data(data)
-		# self.transfer_templatebank(templatebank)
 		self.transfer_objects(data, templatebank)
 		self.script += 'mpi.matched_filter_templatebank( data, templatebank ); '
 		self.run()
@@ -128,7 +176,6 @@ class MPIConnection:
 	def Create_Templates(self, parameters, bankpath_host, basename, attribute, freq_domain, time_domain):
 		'Creates templates for further use in matched filtering (freq_domain) or as signals (time_domain).'
 		# parameters should be a numpy array of dim 2xN; flag_Mr, freq_domain and time_domain should be boolean.
-		# Hint: a seperate MPIConnection object should be called for creating these files to not interfere with the matched filtering.
 		self.add_output_dir(bankpath_host, '/output')
 		transfer_file = 'parameters.txt'
 		parameters.tofile(bankpath_host+transfer_file)
@@ -137,13 +184,15 @@ class MPIConnection:
 		self.script += 'mpi.create_templates(parameters, "/output/", "'+basename+'", "'+str(attribute)+'", '+str(freq_domain)+', '+str(time_domain)+'); '
 		self.run()
 
-
 ##### I have to make sure, flag_show is always False in windows!
 
 
 
-
-### old snippets
-#   ------------
-
-# import os; print(os.listdir("/input/"), file=open("/output/ListOfInput.txt", "w")); 
+def mkdir( dirname, relative=True ):
+	'Creates the directory dirname.'
+	if relative:
+		cwd = os.getcwd()+'/'
+		dirname = cwd+dirname
+	if not os.path.isdir(dirname):
+		os.makedirs(dirname)
+	return
