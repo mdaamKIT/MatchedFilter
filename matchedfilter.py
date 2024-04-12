@@ -2,19 +2,16 @@
 
 # This is the main-File.
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QObject, QThread, Qt, QTimer
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QThread, Qt, QTimer
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QButtonGroup, QMessageBox, QProgressDialog, QProgressBar
 from PyQt5.uic import loadUi
-import threading
 
 import sys
 import os
 from configparser import ConfigParser
-import ast
+from ast import literal_eval
 import numpy as np
-import time
 
-# for the plot
 from matplotlib.backends.backend_qtagg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
@@ -237,7 +234,7 @@ class TemplateScreen(Screen):
 		loadUi(os.getcwd()+'/template_screen.ui',self)
 		self.setWindowTitle('Matched filtering with pycbc (template management)')
 		self.config = config
-		if templatebank:                         # maybe better do an isinstance check here
+		if isinstance(templatebank, handler.TemplateBank):
 			self.templatebank = templatebank
 		else:
 			self.templatebank = handler.TemplateBank()			
@@ -370,7 +367,6 @@ class CreateScreen(Screen):
 		self.config = config
 		self.templatebank = templatebank
 		self.data = data
-		self.create_progress_counter = 0
 		self.labels = labels
 		self.attribute = 'individual'
 		self.flag_All = True
@@ -459,20 +455,20 @@ class CreateScreen(Screen):
 
 		# get first sub-array
 		if self.checkBox_Para1Code.isChecked():
-			array1 = ast.literal_eval(self.lineEdit_Para1Code.text())
+			array1 = literal_eval(self.lineEdit_Para1Code.text())
 		else:
-			start1 = float(ast.literal_eval(self.lineEdit_Para1Start.text()))
-			stop1 = float(ast.literal_eval(self.lineEdit_Para1Stop.text()))
-			num1 = int(ast.literal_eval(self.lineEdit_Para1Number.text()))
+			start1 = float(literal_eval(self.lineEdit_Para1Start.text()))
+			stop1 = float(literal_eval(self.lineEdit_Para1Stop.text()))
+			num1 = int(literal_eval(self.lineEdit_Para1Number.text()))
 			array1 = np.linspace(start1,stop1, num=num1, endpoint=True)
 		
 		# get second sub-array
 		if self.checkBox_Para2Code.isChecked():
-			array2 = ast.literal_eval(self.lineEdit_Para2Code.text())
+			array2 = literal_eval(self.lineEdit_Para2Code.text())
 		else:			
-			start2 = float(ast.literal_eval(self.lineEdit_Para2Start.text()))
-			stop2 = float(ast.literal_eval(self.lineEdit_Para2Stop.text()))
-			num2 = int(ast.literal_eval(self.lineEdit_Para2Number.text()))
+			start2 = float(literal_eval(self.lineEdit_Para2Start.text()))
+			stop2 = float(literal_eval(self.lineEdit_Para2Stop.text()))
+			num2 = int(literal_eval(self.lineEdit_Para2Number.text()))
 			array2 = np.linspace(start2, stop2, num=num2, endpoint=True)
 
 		# merge according to flag_All
@@ -523,28 +519,12 @@ class CreateScreen(Screen):
 	def create_update_progress(self):
 		if os.path.isfile(self.path+'00_progress_create.dat'):
 			track_progress = np.loadtxt(self.path+'00_progress_create.dat', dtype=int)
-			try:
+			if len(track_progress)==2:
 				self.progress_dialog.setLabelText("creating templates...")
 				self.progress_bar.setMaximum(track_progress[1])
 				self.progress_dialog.setValue(track_progress[0])
 				if track_progress[0]==track_progress[1]:
 					self.timer.stop()
-					self.create_progress_counter = 0
-			except IndexError:
-				raise
-				# https://stackoverflow.com/questions/65755434/given-error-even-when-text-in-file-userwarning-loadtxt-empty-input-file-sto
-				# This really seems to arise, when the matchedfilter wants to read the progress file at the same time the container is writing to it.
-				# Thus it just happens sometimes by chance, when the timing is unlucky.
-				# I guess, I can keep ignoring this Error.
-				# That seems to be the better solution than trying to build a complicated workaround, since there is no real damage in ignoring.
-				# Only sometimes the progress bar skips one update.
-		# no need for the following, as long as self.create_stop() not really interrupts the docker container
-		# else:
-		# 	self.create_progress_counter+=1
-		# 	if self.create_progress_counter > 59:
-		# 		print('Template creation took too long to prepare, abort.')
-		# 		self.create_stop()
-		# 		return
 
 	def create_cancel(self, event=None):
 		canceled = np.ones(1, dtype=bool)
@@ -593,7 +573,6 @@ class DataScreen(Screen):
 		self.config
 		self.templatebank = templatebank
 		self.data = data
-		self.mf_progress_counter = 0
 		self.labels = labels
 		# connect Push Buttons
 		self.pushButton_loadData.clicked.connect(self.load_data)
@@ -688,32 +667,14 @@ class DataScreen(Screen):
 
 
 	def mf_update_progress(self):
-		counter = 0
 		if os.path.isfile(self.data.savepath+'00_progress_mf.dat'):
 			track_progress = np.loadtxt(self.data.savepath+'00_progress_mf.dat', dtype=int)
-			try:
+			if len(track_progress)==2:
 				self.progress_dialog.setLabelText("matched filtering in progress...")
 				self.progress_bar.setMaximum(track_progress[1])
 				self.progress_dialog.setValue(track_progress[0])
 				if track_progress[0]==track_progress[1]:
 					self.timer.stop()
-					self.mf_progress_counter = 0
-			except IndexError:
-				raise
-				# https://stackoverflow.com/questions/65755434/given-error-even-when-text-in-file-userwarning-loadtxt-empty-input-file-sto
-				# This really seems to arise, when the matchedfilter wants to read the progress file at the same time the container is writing to it.
-				# Thus it just happens sometimes by chance, when the timing is unlucky.
-				# I guess, I can keep ignoring this Error.
-				# That seems to be the better solution than trying to build a complicated workaround, since there is no real damage in ignoring.
-				# Only sometimes the progress bar skips one update.
-
-		# no need for the following, as long as self.mf_stop() not really interrupts the docker container
-		# else:
-		# 	self.mf_progress_counter+=1
-		# 	if self.mf_progress_counter > 59:
-		# 		print('Matched filtering took too long to prepare, abort.')
-		# 		self.mf_stop()
-		# 		return
 
 	def mf_cancel(self):
 		canceled = np.ones(1, dtype=bool)

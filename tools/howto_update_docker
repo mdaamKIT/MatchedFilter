@@ -1,0 +1,21 @@
+
+The Dockerfile in the parent directory is made to build the image mdaamkit/mpi.
+
+
+How to update the docker image
+------------------------------
+
+Build and push image:
+
+- Make your changes.
+- $ systemctl start docker && docker login              # not necessary on my machine
+- $ docker build -t _tag_ _location_ --network=host     # builds image tagged _tag_ from Dockerfile in _location_
+- $ docker image push mdaamkit/_tag_                    # pushing image to the dockerhub
+- $ docker image ls                                     # checking if you updated the image
+
+Pull image: (only necessary on a different machine)
+
+- $ docker pull mdaamkit/_tag_                          # pulling image from dockerhub
+
+Test run: (not necessary at all)
+- $ docker run -v _host_:_container_ mdaamkit/_tag_     # runs the container while connecting the volumes _host_ on the host with _container_ inside the container.

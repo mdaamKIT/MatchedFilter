@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
-import matplotlib.pyplot as plt
 from pycbc.waveform import get_td_waveform,td_approximants
 from pycbc import types
 from pycbc.filter import matched_filter_core, sigmasq #, matched_filter, match
-import resampy     # https://resampy.readthedocs.io/en/stable/example.html
-import os
-import wave
-import h5py
 import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+import wave
+import resampy
+import h5py
+
 from collections import defaultdict
 from datetime import datetime
 from configparser import ConfigParser
