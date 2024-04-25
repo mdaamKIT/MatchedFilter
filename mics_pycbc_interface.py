@@ -123,17 +123,17 @@ def load_wav( filename, channel='unclear', debugmode=False ):
 				left = stereo[:,0]
 				right = stereo[:,1]
 
-				if channel == 'left':
+				if channel == 'greater':
+					if np.sum(np.square(right)) > np.sum(np.square(left)):
+						track = right
+					else:
+						track = left
+				elif channel == 'left':
 					track = left
 				elif channel == 'right':
 					track = right
 				elif channel == 'average':
 					track = 0.5*(left+right)
-				elif channel == 'greater':
-					if np.sum(np.square(right)) > np.sum(np.square(left)):
-						track = right
-					else:
-						track = left
 				else:
 					raise ValueError('channel can only be: mono, left, right, average, greater, unclear. But I got: ',channel)
 		except Exception as err:
