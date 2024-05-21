@@ -16,11 +16,6 @@ from datetime import datetime
 from configparser import ConfigParser
 from json import loads as jsonloads
 
-### About
-#   -----
-
-# This file seeks to define some useful functions to use the pycbc-functions in my lab.
-
 
 ### Global definitions
 #   ------------------
@@ -41,11 +36,6 @@ else:
 
 ### Redefine classes inside the container
 #   -------------------------------------
-
-# It is just more handy to input an object as an argument of a function than every of its properties seperately.
-# This is why I decided to transfer the Template and Data objects from the templatebank_handler on the host machine in here.
-# I guess I don't need any methods for changing values as these objects probably won't live long enough
-# since the container will have to be restarted quite a few times.
 
 class TemplateBank:
 	def __init__(self):
@@ -98,7 +88,6 @@ def load_wav( filename, channel='unclear', debugmode=False ):
 	'Load a single numpy-array from a wav-file. Works with mono and stereo.'
 	# channel can be 'mono', 'left', 'right', 'average', 'greater', 'unclear'.
 	# 'unclear' is changed to 'greater' if the file is stereo.
-	# following: https://stackoverflow.com/questions/54174160/how-to-get-numpy-arrays-output-of-wav-file-format
 
 	with wave.open(filename) as snd:
 
@@ -226,6 +215,7 @@ def make_template( m1, m2, apx='SEOBNRv4', samplerate=4096, duration=1.0, flag_s
 		hp=hp.crop(durdiff,0)
 	durdiff = duration-hp.duration
 	hp.prepend_zeros(int(durdiff*samplerate))
+	hp_freq = hp.to_frequencyseries()
 
 	if flag_show:
 		plt.plot(hp.sample_times, hp)
@@ -233,9 +223,6 @@ def make_template( m1, m2, apx='SEOBNRv4', samplerate=4096, duration=1.0, flag_s
 		plt.xlabel('Time (s)')
 		plt.title('Merger-Template '+str(int(m1))+','+str(int(m2)))
 		plt.show()
-
-	# transform to a FrequencySeries
-	hp_freq = hp.to_frequencyseries()
 
 	return hp_freq, hp
 
@@ -300,6 +287,8 @@ def load_FrequencySeries(path):
 
 def create_templates(parameters, savepath, basename, attribute, freq_domain, time_domain):
 	'Creates templates for further use in matched filtering (freq_domain) or as signals (time_domain).'
+
+	# I could add instance checks, dimensions checks or value checks:
 	# parameters should be a numpy array of dim 2xN; flag_Mr, freq_domain and time_domain should be boolean.
 	# keyword parameter should be either 'individual', 'total', or 'chirp'
 
@@ -391,7 +380,7 @@ def create_templates(parameters, savepath, basename, attribute, freq_domain, tim
 	# np.savetxt(savepath+'00_progress_create.dat', [N+1, N+1], fmt=['%i'])
 
 
-def matched_filter_single(data, template):  # psd, f_low, these arguments were cut out now
+def matched_filter_single(data, template):
 	'Perform the matched filtering of data with a single template.'
 
 	plot_snr = False
@@ -457,7 +446,8 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 			plt.savefig(data.savepath+'SNR_'+data.shortname+'_'+template.shortname+'_'+str(count).zfill(2)+'.png')
 			if data.flag_show: plt.show()
 			else: plt.close()  
-			
+	
+	### plot results		
 	# create and plot full snr
 	if plot_snr:
 		full_snr = np.maximum(snr_even, snr_odd)
@@ -479,10 +469,10 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 		if data.flag_show: plt.show()
 		plt.close() 
 
-	### get maximum values over all segments
+	# get maximum values over all segments
 	Maxmatch = [matches[count_of_max], times[count_of_max], phis[count_of_max], count_of_max, indices[count_of_max]]
 
-	### plot template and data together
+	# plot template and data together
 	# Plotting template and data together ('merger plot') is now done by calling the plot_merger function. (since v0.2)
 	# Actually calling plot_merger is swapped out to the matched_filter_templatebank function, to save disc space by calling it only for the best matching templates.
 	# In case all merger plots should be created, it is still executed here, to keep progress bar more meaningful.
@@ -494,12 +484,10 @@ def matched_filter_single(data, template):  # psd, f_low, these arguments were c
 def plot_merger(data, template, Maxmatch):
 	'Plot data and template together at the time of best match.'
 
-	### I should check, if data and template are respective objects.
-	### Maybe Maxmatch should also be an object. (Maybe not, since I don't want it to persist in the memory.)
-
-	### settings for plot should somehow come from the config-file
+	# Maybe add insance checks for data and template objects.
 
 	tmp = template.frequency_series		# readability
+
 	# settings for plot
 	before = config.getfloat('mergerplots', 'time_before_merger')   # start plot *before* merger (in s)
 	after = config.getfloat('mergerplots', 'time_before_merger')    # end        * after* merger (in s)
@@ -562,7 +550,7 @@ def matched_filter_templatebank(data, templatebank):
 				plot_merger(data, templatebank.list_of_templates[int(results_sorted[index,0])], maxmatches_all[int(results_sorted[index,0])])
 			if index < config.getint('mergerplots', 'max_number') and results_sorted[index,1] > config.getfloat('mergerplots', 'match_threshold'):
 				plot_merger(data, templatebank.list_of_templates[int(results_sorted[index,0])], maxmatches_all[int(results_sorted[index,0])])
-	# save results
+	# save results unsorted
 	header = 'Matched Filtering results of '+data.shortname+': \n'
 	header += 'templatename, match, time of match, template-m1, template-m2, template-M, template-R, template-Mc'
 	np.savetxt(data.savepath+'00_matched_filtering_results.dat', writedata, fmt=['%s', '%f', '%f', '%f', '%f', '%f', '%f', '%f'], header=header)

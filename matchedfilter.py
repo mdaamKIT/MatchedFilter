@@ -65,7 +65,7 @@ class MatchedFilteringWorker(QThread):
 
 
 class Canvas3DPlot(QMainWindow):
-	# following this: https://stackoverflow.com/questions/61934143/pyqt5-with-matplotlib-figure-the-event-loop-is-already-running
+
 	def __init__(self, results, attribute='individual', parent=None):
 		super().__init__(parent)
 
@@ -195,7 +195,7 @@ class Screen(QMainWindow):   # Superclass where the different Screens following 
 
 
 	### methods for file-Dialogs
-	# see: https://pythonspot.com/pyqt5-file-dialog/
+
 	def openFileNameDialog(self, DialogName, defaultpath):
 		options = QFileDialog.Options()
 		options |= QFileDialog.DontUseNativeDialog
@@ -487,7 +487,6 @@ class CreateScreen(Screen):
 		return array
 
 	def create_templates(self):
-		# for questions how this works, look at the matched_filtering method of the DataScreen
 
 		# gather input for Worker
 		array = self.get_array()
@@ -618,10 +617,8 @@ class DataScreen(Screen):
 	def matched_filter(self):
 
 		if isinstance(self.data, handler.Data):
-			# Input for the progress bar in this method is from those sources:
-			# https://doc.qt.io/qtforpython-6/PySide6/QtCore/QThread.html#PySide6.QtCore.PySide6.QtCore.QThread.quit
-			# https://www.programcreek.com/python/example/108099/PyQt5.QtWidgets.QProgressDialog
 
+			# make sure, matched filtering can be started (prevents overriding of existing results)
 			do_mf = True
 			if os.path.isfile(self.data.savepath+'00_matched_filtering_results.dat'):
 				do_mf = False
@@ -631,10 +628,10 @@ class DataScreen(Screen):
 					'The chosen output directory already contains the results of a previous matched filtering.\n\nDo you want to continue and overwrite the existing results?',
 					QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
 					)
-
 				if answer==QMessageBox.StandardButton.Yes:
 					do_mf = True
 
+			# start matched filtering
 			if do_mf:
 				# set up the progress_dialog
 				self.progress_dialog = QProgressDialog("Preparing matched filtering,\n please wait...", "Cancel", 0, len(self.templatebank.list_of_templates)+2, self) # None instead of "Cancel" as CancelButtonText removes the cancel-button.

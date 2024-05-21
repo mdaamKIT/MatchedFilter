@@ -11,8 +11,8 @@ import mics_pycbc_interface as mpi
 # and the auxiliary interface for pycbc (mics_pycbc_interface, mpi) in the container. 
 
 # This is not strictly necessary on a linux (or MacOS) machine, where the main application can directly call functions from pycbc or mpi.
-# To keep differences between the windows and the linux version minimal, templatebank_handler_linux exists. 
-# It is designed make it possible for the main application to call the mpi functions on linux exactly the same way it would on windows.
+# To keep differences between the Windows and the linux version minimal, templatebank_handler_linux exists. 
+# It is designed to make it possible for the main application to call the mpi functions on linux exactly the same way it would on Windows.
 # I might not have found the most elegant solution to make this work, but a solution anyway.
 
 

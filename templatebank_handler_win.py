@@ -15,7 +15,7 @@ debugmode = config.getboolean('main', 'debugmode')
 # The MatchedFilter software relies on functions of the pycbc package which is not available on Windows, but on linux and MacOS.
 # To be working on Winodws machines as well, a docker container is used.
 # Templatebank_handler_win manages the communication between the main application on the host (matchedfilter.py) 
-# and the auxiliary interface for pycbc (mics_pycbc_interface, mpi) in the docker container. 
+# and the auxiliary interface for pycbc (mics_pycbc_interface, mpi) in the docker container.
 
 
 class TemplateBank:
@@ -104,7 +104,7 @@ class Data:
 class MPIConnection:
 	def __init__(self):
 		self.client = docker.from_env()
-		self.volumes = {}     # {output_host: {'bind': output_container, 'mode': 'rw'}}
+		self.volumes = {}     # style: {output_host: {'bind': output_container, 'mode': 'rw'}}
 		self.commands = []
 		self.script = '''python -c 'import mics_pycbc_interface as mpi; '''
 		self.add_read_dir(os.getcwd(), '/input/mf/')
@@ -179,8 +179,6 @@ class MPIConnection:
 		self.script += 'parameters = np.fromfile("/output/'+transfer_file+'").reshape((2,-1)); '
 		self.script += 'mpi.create_templates(parameters, "/output/", "'+basename+'", "'+str(attribute)+'", '+str(freq_domain)+', '+str(time_domain)+'); '
 		self.run()
-
-##### I have to make sure, flag_show is always False in windows!
 
 
 
