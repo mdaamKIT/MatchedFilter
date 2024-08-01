@@ -62,7 +62,7 @@ class Data:
 		self.savepath = self.datapath+self.shortname+'/'
 		# Some settings are fixed so far. They can be changed with explicitly calling their changing methods (see below) but there should be no need.
 		self.flag_show = False
-		self.preferred_samplerate = 4096
+		self.preferred_srate = 4096
 		self.segment_duration = 1
 		# self.ending = '.wav'
 
@@ -90,8 +90,8 @@ class Data:
 	def change_flagshow(self, new_flag):
 		self.flag_show = new_flag
 
-	def change_preferred_samplerate(self, new_samplerate):
-		self.preferred_samplerate = new_samplerate
+	def change_preferred_srate(self, new_srate):
+		self.preferred_srate = new_srate
 
 	def change_segment_duration(self, new_segment_duration):
 		self.segment_duration = new_segment_duration
@@ -126,7 +126,7 @@ class MPIConnection:
 		if data.datapath != data.savepath:
 			datapath_container = '/input/'+data.shortname+'/'
 			self.add_read_dir(data.datapath, datapath_container)
-		self.script += 'data = mpi.Data("'+self.volumes[data.datapath]['bind']+'","'+data.filename+'","'+self.volumes[data.savepath]['bind']+'",'+str(data.preferred_samplerate)+','+str(data.segment_duration)+','+str(data.flag_show)+'); '
+		self.script += 'data = mpi.Data("'+self.volumes[data.datapath]['bind']+'","'+data.filename+'","'+self.volumes[data.savepath]['bind']+'",'+str(data.preferred_srate)+','+str(data.segment_duration)+','+str(data.flag_show)+'); '
 		# TemplateBank
 		list_of_bankpaths = list(set(templatebank.list_of_bankpaths).difference([data.datapath, data.savepath]))
 		list_of_bankpaths_both = [(bankpath_host,'/input/templatebank/'+Path(bankpath_host).parts[-1]+'_'+str(distinction)+'/') for distinction, bankpath_host in enumerate(list_of_bankpaths)]  # distinction because we really need unique names for different paths

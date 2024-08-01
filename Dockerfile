@@ -1,11 +1,11 @@
 
 FROM python:3.9 
-# I can't use newer version of python because numba does not support it, which is necessary for resampling with resampy.
 
-ADD mics_pycbc_interface.py /
-RUN mkdir /output
-RUN mkdir /input
+RUN apt update && apt install -y cmake
 
-RUN pip install pycbc numpy matplotlib
-RUN pip install wave resampy h5py
-RUN pip install datetime configparser
+COPY mics_pycbc_interface.py /
+RUN mkdir /output /input
+
+RUN pip install --no-cache-dir pycbc numpy matplotlib
+RUN pip install --no-cache-dir wave samplerate h5py
+RUN pip install --no-cache-dir datetime configparser

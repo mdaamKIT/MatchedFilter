@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import os
 
 import wave
-import resampy
+import samplerate  # sadly samplerate can no longer be used as variable name - they're all called srate now.
 import h5py
 
 from collections import defaultdict
@@ -54,17 +54,17 @@ class Template:
 		self.frequency_series, self.m1, self.m2 = load_FrequencySeries(self.path+self.filename)
 
 class Data:
-	def __init__(self, datapath, filename, savepath, preferred_samplerate, segment_duration, flag_show):
+	def __init__(self, datapath, filename, savepath, preferred_srate, segment_duration, flag_show):
 		self.datapath = datapath
 		self.filename = filename
 		self.shortname = filename[:-4]
 		self.savepath = savepath
 
-		self.preferred_samplerate = preferred_samplerate
+		self.preferred_srate = preferred_srate
 		self.segment_duration = segment_duration
 		self.flag_show = flag_show
 
-		self.segments = segment_data(datapath+filename, preferred_samplerate, segment_duration)
+		self.segments = segment_data(datapath+filename, preferred_srate, segment_duration)
 
 class NaNError(Exception):
 	pass
@@ -92,7 +92,7 @@ def load_wav( filename, channel='unclear', debugmode=False ):
 	with wave.open(filename) as snd:
 
 		buffer = snd.readframes(snd.getnframes())
-		samplerate = snd.getframerate()
+		srate = snd.getframerate()
 		
 		# relabel the channel, if 'unclear'
 		if channel == 'unclear':
@@ -132,10 +132,10 @@ def load_wav( filename, channel='unclear', debugmode=False ):
 		if debugmode:
 			print()
 			print('Loaded '+filename+' with channel-info '+channel)
-			print('The loaded sample length is: ', len(track)/samplerate, 'sec.')
-			print('Its samplerate is: ',samplerate , 'Hz')
+			print('The loaded sample length is: ', len(track)/srate, 'sec.')
+			print('Its samplerate is: ',srate , 'Hz')
 
-	return samplerate,track
+	return srate,track
 
 
 ### Functions to handle lal.gpstime to datetime conversions
@@ -173,16 +173,19 @@ def get_end_time(timeseries):
 ### Functions to load data and do the matched filtering
 #   ---------------------------------------------------
 
-def segment_data(filename, preferred_samplerate=4096, segment_duration=1):
+def segment_data(filename, preferred_srate=4096, segment_duration=1):
 	'Load a wav-file and return it as a list of TimeSeries of proper duration and samplerate for further analysis.'
+	# preferred_srate should be a multiple of two (see definition of segment_lenght in l.188)
 
-	# load and resample with preferred_samplerate
-	samplerate,track = load_wav(filename, channel='unclear')
-	newtrack = resampy.resample(track, samplerate, preferred_samplerate)  # resampling with pycbc did not work, since the recording samplerate is not right. (I guess would have to be a multiple of 2.)
+	# load and resample with preferred_srate
+	srate,track = load_wav(filename, channel='unclear')
+	ratio = preferred_srate/srate
+	converter = 'sinc_best'
+	newtrack = samplerate.resample(track, ratio, converter)  # resampling with pycbc did not work, since the recording samplerate is not right. (I guess would have to be a multiple of 2.)
 	newtrack = newtrack.astype(np.float64)
 	
 	# fill with zeros till length is a multiple of segment_length / 2
-	segment_length = segment_duration*preferred_samplerate  # this should be a multiple of two!
+	segment_length = segment_duration*preferred_srate  # this should be a multiple of two!
 	k = max(int(np.ceil(len(newtrack)/(0.5*segment_length))), 2)
 	newtrack.resize(int(k*0.5*segment_length), refcheck=False)
 
@@ -191,12 +194,12 @@ def segment_data(filename, preferred_samplerate=4096, segment_duration=1):
 	for index in range(k-1):
 		start = int(index*0.5*segment_length)
 		end = start+segment_length
-		data_segments += [types.timeseries.TimeSeries(newtrack[start:end],delta_t=1./preferred_samplerate,epoch=index*0.5*segment_duration)]
+		data_segments += [types.timeseries.TimeSeries(newtrack[start:end],delta_t=1./preferred_srate,epoch=index*0.5*segment_duration)]
 
 	return data_segments
 
 
-def make_template( m1, m2, apx='SEOBNRv4', samplerate=4096, duration=1.0, flag_show=False ):
+def make_template( m1, m2, apx='SEOBNRv4', srate=4096, duration=1.0, flag_show=False ):
 	'Create a template in frequency-domain or time-domain or both.'
 
 	# some hard-coded settings
@@ -208,13 +211,13 @@ def make_template( m1, m2, apx='SEOBNRv4', samplerate=4096, duration=1.0, flag_s
 	                             mass1=m1,
 	                             mass2=m2,
 	                             spin1z=spin,
-	                             delta_t=1.0/samplerate,
+	                             delta_t=1.0/srate,
 	                             f_lower=f_low)             # (we only use plus polarization)
 	durdiff = hp.duration-0.5*duration
 	if durdiff>0:
 		hp=hp.crop(durdiff,0)
 	durdiff = duration-hp.duration
-	hp.prepend_zeros(int(durdiff*samplerate))
+	hp.prepend_zeros(int(durdiff*srate))
 	hp_freq = hp.to_frequencyseries()
 
 	if flag_show:
@@ -227,10 +230,10 @@ def make_template( m1, m2, apx='SEOBNRv4', samplerate=4096, duration=1.0, flag_s
 	return hp_freq, hp
 
 
-def make_template_any_apx( m1, m2, samplerate=4096, duration=1.0, flag_show=False, errorname='nameless_template' ):
+def make_template_any_apx( m1, m2, srate=4096, duration=1.0, flag_show=False, errorname='nameless_template' ):
 	'Create a template. Try all allowed approximants (apx), if default apx fails.'
 	try:
-		hp_freq, hp = make_template(m1, m2, apx=APX_DEFAULT, samplerate=samplerate, duration=duration, flag_show=flag_show)
+		hp_freq, hp = make_template(m1, m2, apx=APX_DEFAULT, srate=srate, duration=duration, flag_show=flag_show)
 		if np.isnan(hp_freq[0]) or np.isnan(hp[0]):
 			raise NaNError
 		return hp_freq, hp
@@ -238,7 +241,7 @@ def make_template_any_apx( m1, m2, samplerate=4096, duration=1.0, flag_show=Fals
 		print('Creating template with default approximant ('+APX_DEFAULT+') failed. Trying other ones.')
 		for apx in APX_ALLOWED:
 			try:
-				hp_freq, hp = make_template(m1,m2,apx=apx, samplerate=samplerate, duration=duration, flag_show=flag_show)
+				hp_freq, hp = make_template(m1,m2,apx=apx, srate=srate, duration=duration, flag_show=flag_show)
 				if np.isnan(hp_freq[0]) or np.isnan(hp[0]):
 					raise NaNError
 				print('Creating template with other approximant ('+apx+') worked.')

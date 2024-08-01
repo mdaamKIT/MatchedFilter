@@ -36,8 +36,8 @@ If you are using Windows, you need docker in order to use the MatchedFilter soft
 You need to have Python 3 installed and you need the following packages, to be able to run the MatchedFilter software. Docker and pathlib are only necessary on Windows.
 
 - pycbc
-- sys, os, ast, time, configparser (typically preinstalled in any Python version)
-- numpy, matplotlib, PyQt5
+- sys, os, ast, time, configparser, collections, datetime, json (typically preinstalled in any Python version)
+- numpy, matplotlib, h5py, samplerate, PyQt5
 - (only Windows: docker, pathlib)
 
 
@@ -75,7 +75,7 @@ The software enables you:
 2. to create .hdf files resembling gravitational waves in frequency domain to use for the matched filtering.
 3. to do the matched filtering.
 
-We hope the use of the software is mostly self-explanatory. If you already know the software by now, you are likely to have heard of it by one of us personally and you should already have a coarse idea of how it is used.
+We hope the use of the software is mostly self-explanatory.
 The software calculates the 'match' quantity during matched filtering. The match is the normalized correlation of the analyzed data with all the previously chosen templates. The match is 1.0 if the analyzed data are identical to the template and most of the times around 0.1 to 0.2 if the data is randomly uncorrelated. A match of 0.4 or higher typically indicates having measured a template similar to the one the filter was matched to. The results of the analysis are by default stored in the same location where the analyzed data was found in a folder of the same name as the analyzed data. It is stored as a table in a .dat file. Additionally, the best matching templates are plotted together with the data for comparison. A 3D-plot of the match versus the parameters (masses) of the templates can be created from the software.
 
 

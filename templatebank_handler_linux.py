@@ -56,7 +56,7 @@ class Data:
 		self.savepath = self.datapath+self.shortname+'/'
 		# Some settings are fixed so far. They can be changed with explicitly calling their changing methods (see below) but there should be no need.
 		self.flag_show = False
-		self.preferred_samplerate = 4096
+		self.preferred_srate = 4096
 		self.segment_duration = 1
 		# self.ending = '.wav'
 
@@ -68,7 +68,7 @@ class Data:
 		mpi_templatebank = mpi.TemplateBank()
 		for template in templatebank.list_of_templates:
 			mpi_templatebank.add_template(template.bankpath, template.filename) # Not pretty, since every template now is two objects: one here in the handler and one in mpi. But it's easy and it works.
-		mpi_data = mpi.Data(self.datapath, self.filename, self.savepath, self.preferred_samplerate, self.segment_duration, False)
+		mpi_data = mpi.Data(self.datapath, self.filename, self.savepath, self.preferred_srate, self.segment_duration, False)
 		mpi.matched_filter_templatebank(mpi_data, mpi_templatebank)
 
 	def set_datapath(self, newpath):
@@ -81,13 +81,13 @@ class Data:
 		self.savepath = newpath
 		mkdir(self.savepath, relative=False)
 
-	# changing of presets (should never be necessary)
+	# change presets (should never be necessary)
 
 	def change_flagshow(self, new_flag):
 		self.flag_show = new_flag
 
-	def change_preferred_samplerate(self, new_samplerate):
-		self.preferred_samplerate = new_samplerate
+	def change_preferred_srate(self, new_srate):
+		self.preferred_srate = new_srate
 
 	def change_segment_duration(self, new_segment_duration):
 		self.segment_duration = new_segment_duration
