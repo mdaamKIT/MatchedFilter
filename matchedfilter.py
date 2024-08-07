@@ -343,6 +343,7 @@ class SetupScreen(Screen):             # maybe this should be a QDialog instead 
 	@pyqtSlot()
 	def done(self):
 		self.config.set('main', 'firststartup', 'False')
+		global handler
 		OS = self.config.get('main', 'os')
 		if OS=='windows':
 			import templatebank_handler_win as handler
