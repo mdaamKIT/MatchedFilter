@@ -756,20 +756,23 @@ class DataScreen(Screen):
 config = ConfigParser()
 config.read('config.ini')
 
-OS = config.get('main', 'os')
-if OS=='windows':
-	import templatebank_handler_win as handler
-elif OS=='linux':
-	import templatebank_handler_linux as handler
-else:
-	raise ValueError('''Value for os in [main] in config.ini is expected to be either 'windows' or 'linux', but I got: ''', OS)
-
 with open('matchedfilter.qss','r') as qss:
 	style = qss.read()
 
 app = QApplication(sys.argv)
 app.setStyleSheet(style)
-win = TemplateScreen(config, None, None)
-if config.getboolean('main', 'firststartup'): win = SetupScreen(config, None, None)
+
+if config.getboolean('main', 'firststartup'): 
+	win = SetupScreen(config, None, None)
+else:
+	OS = config.get('main', 'os')
+	if OS=='windows':
+		import templatebank_handler_win as handler
+	elif OS=='linux':
+		import templatebank_handler_linux as handler
+	else:
+		raise ValueError('''Value for os in [main] in config.ini is expected to be either 'windows' or 'linux', but I got: ''', OS)
+	win = TemplateScreen(config, None, None)	
+
 win.show()
 sys.exit(app.exec_())
