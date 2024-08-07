@@ -54,7 +54,6 @@ class MatchedFilteringWorker(QThread):
 		super().__init__()
 		self.data = data
 		self.templatebank = templatebank
-		self.OS = OS
 		self.debugmode = debugmode
 
 	def run(self):
