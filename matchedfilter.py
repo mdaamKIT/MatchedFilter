@@ -481,7 +481,7 @@ class CreateScreen(Screen):
 					array[1][counter] = elem2
 					counter += 1
 		else:
-			length = np.minimum( array1, array2 )
+			length = np.minimum( len(array1), len(array2) )
 			array = np.asarray( (array1[:length], array2[:length]) )
 
 		return array
