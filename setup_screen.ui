@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>482</width>
-    <height>309</height>
+    <width>536</width>
+    <height>367</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -45,7 +45,7 @@
        <number>10</number>
       </property>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_toggleOS">
+       <layout class="QGridLayout" name="gridLayout">
         <property name="leftMargin">
          <number>10</number>
         </property>
@@ -58,14 +58,47 @@
         <property name="bottomMargin">
          <number>10</number>
         </property>
-        <item>
-         <widget class="QLabel" name="label_OS">
+        <item row="0" column="3">
+         <widget class="QRadioButton" name="radioButton_windows">
           <property name="text">
-           <string>Operating System:</string>
+           <string>Yes</string>
           </property>
          </widget>
         </item>
-        <item>
+        <item row="1" column="4">
+         <widget class="QLabel" name="label_linux">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <italic>true</italic>
+           </font>
+          </property>
+          <property name="text">
+           <string>(Linux / MacOS [unstable])</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_Docker">
+          <property name="text">
+           <string>Use Docker</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="4">
+         <widget class="QLabel" name="label_windows">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <italic>true</italic>
+           </font>
+          </property>
+          <property name="text">
+           <string>(Windows / MacOS [stable but slow])</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
          <spacer name="horizontalSpacer_OS">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -78,17 +111,23 @@
           </property>
          </spacer>
         </item>
-        <item>
-         <widget class="QRadioButton" name="radioButton_windows">
+        <item row="1" column="3">
+         <widget class="QRadioButton" name="radioButton_linux">
           <property name="text">
-           <string>windows</string>
+           <string>No</string>
           </property>
          </widget>
         </item>
-        <item>
-         <widget class="QRadioButton" name="radioButton_linux">
+        <item row="0" column="1">
+         <widget class="QLabel" name="label_OS">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <italic>true</italic>
+           </font>
+          </property>
           <property name="text">
-           <string>linux / macOS</string>
+           <string>(Operating System)</string>
           </property>
          </widget>
         </item>
@@ -111,7 +150,7 @@
        </spacer>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_toggleDebug">
+       <layout class="QGridLayout" name="gridLayout_2">
         <property name="leftMargin">
          <number>10</number>
         </property>
@@ -124,14 +163,28 @@
         <property name="bottomMargin">
          <number>10</number>
         </property>
-        <item>
+        <item row="0" column="0">
          <widget class="QLabel" name="label_debug">
           <property name="text">
            <string>debugmode:</string>
           </property>
          </widget>
         </item>
-        <item>
+        <item row="0" column="2">
+         <widget class="QRadioButton" name="radioButton_debugTrue">
+          <property name="text">
+           <string>True</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QRadioButton" name="radioButton_debugFalse">
+          <property name="text">
+           <string>False</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
          <spacer name="horizontalSpacer_debug">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -144,19 +197,21 @@
           </property>
          </spacer>
         </item>
-        <item>
-         <widget class="QRadioButton" name="radioButton_debugTrue">
-          <property name="text">
-           <string>True</string>
+        <item row="0" column="3">
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="radioButton_debugFalse">
-          <property name="text">
-           <string>False</string>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
           </property>
-         </widget>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>205</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </item>
@@ -197,6 +252,19 @@
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_facultative">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+            <italic>true</italic>
+           </font>
+          </property>
+          <property name="text">
+           <string>(facultative)</string>
           </property>
          </widget>
         </item>
@@ -306,7 +374,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>482</width>
+     <width>536</width>
      <height>22</height>
     </rect>
    </property>
