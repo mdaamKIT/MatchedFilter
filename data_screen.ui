@@ -185,7 +185,7 @@
            </font>
           </property>
           <property name="text">
-           <string>  most recent loaded Templates:</string>
+           <string>  most recent loaded templates:</string>
           </property>
          </widget>
         </item>
